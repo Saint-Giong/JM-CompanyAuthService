@@ -11,13 +11,13 @@ import rmit.saintgiong.authservice.domain.company.entity.CompanyAuth;
 import java.util.Optional;
 
 @Service
+@AllArgsConstructor
 public class CompanyAuthService {
 
-    @Autowired
-    private  CompanyAuthRepository companyAuthRepository;
 
-    @Autowired
-    private  PasswordEncoder passwordEncoder;
+    private final CompanyAuthRepository companyAuthRepository;
+
+    private final PasswordEncoder passwordEncoder;
 
     public CompanyAuthResponseDto registerCompany(CompanyRegistrationDto registrationDto) {
         // Check if email already exists
@@ -30,10 +30,12 @@ public class CompanyAuthService {
         }
 
         // Create and save CompanyAuth
-        CompanyAuth companyAuth = new CompanyAuth();
-        companyAuth.setEmail(registrationDto.getEmail());
-        companyAuth.setHashedPassword(passwordEncoder.encode(registrationDto.getPassword()));
-        companyAuth.setActivated(false);
+        CompanyAuth companyAuth = CompanyAuth.builder()
+                                            .email(registrationDto.getEmail())
+                                            .hashedPassword(passwordEncoder.encode(registrationDto.getPassword()))
+                                            .isActivated(false)
+                                            .build();
+
         CompanyAuth savedAuth = companyAuthRepository.save(companyAuth);
 
         //TODO: Add kafka publisher to create profile

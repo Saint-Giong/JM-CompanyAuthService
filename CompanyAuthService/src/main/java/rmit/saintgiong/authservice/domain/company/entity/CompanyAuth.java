@@ -17,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter @Getter @ToString
+@Builder
 public class CompanyAuth {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

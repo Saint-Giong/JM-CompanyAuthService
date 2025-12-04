@@ -2,7 +2,6 @@ package rmit.saintgiong.authservice.domain.company.controller;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,11 +10,11 @@ import rmit.saintgiong.authservice.domain.company.dto.CompanyRegistrationDto;
 import rmit.saintgiong.authservice.domain.company.services.service.CompanyAuthService;
 
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1/sgjm/auth")
+@AllArgsConstructor
 public class CompanyAuthController {
 
-    @Autowired
-    private  CompanyAuthService companyAuthService;
+    private final CompanyAuthService companyAuthService;
 
 
     @PostMapping("/register")
