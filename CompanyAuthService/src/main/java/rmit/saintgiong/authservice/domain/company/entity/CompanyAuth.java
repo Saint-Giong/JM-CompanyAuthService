@@ -1,20 +1,29 @@
-package rmit.saintgiong.authservice.domain.user.entity;
+package rmit.saintgiong.authservice.domain.company.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import jakarta.validation.constraints.Email;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+
+@EntityListeners(AuditingEntityListener.class)
+@Entity(name = "company_auth")
 @Data
-@Entity(name = "auth")
-public class Auth {
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter @Getter @ToString
+public class CompanyAuth {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID companyId;
 
+    @Column(nullable = false, unique = true)
+    @Email
     private String email;
 
     @Column(name = "hashed_password")
@@ -31,6 +40,6 @@ public class Auth {
     private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Column(name = "updated_at", insertable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }

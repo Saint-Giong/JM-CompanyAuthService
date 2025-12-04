@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.user.services;
+package rmit.saintgiong.authservice.domain.company.services;
 
 import org.springframework.stereotype.Service;
 
