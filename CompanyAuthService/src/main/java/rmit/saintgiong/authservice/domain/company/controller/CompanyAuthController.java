@@ -1,13 +1,32 @@
 package rmit.saintgiong.authservice.domain.company.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import rmit.saintgiong.authservice.domain.company.dto.CompanyAuthResponseDto;
+import rmit.saintgiong.authservice.domain.company.dto.CompanyRegistrationDto;
+import rmit.saintgiong.authservice.domain.company.services.service.CompanyAuthService;
 
 @RestController
+@RequestMapping("/api/v1/auth")
 public class CompanyAuthController {
 
-    @GetMapping("/hello")
-    public String hello() {
-        return "hello";
+    @Autowired
+    private  CompanyAuthService companyAuthService;
+
+
+    @PostMapping("/register")
+    public ResponseEntity<CompanyAuthResponseDto> registerCompany(
+            @Valid @RequestBody CompanyRegistrationDto registrationDto) {
+        CompanyAuthResponseDto response = companyAuthService.registerCompany(registrationDto);
+        
+        if (response.isSuccess()) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
     }
 }
