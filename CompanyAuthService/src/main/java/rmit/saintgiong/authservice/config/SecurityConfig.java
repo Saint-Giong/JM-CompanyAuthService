@@ -15,7 +15,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/register").permitAll()  // Allow public access to registration
+                .requestMatchers("/api/v1/sgjm/auth/register").permitAll()  // Allow public access to registration
                 .anyRequest().authenticated()                                 
             )
             .httpBasic(basic -> {})
