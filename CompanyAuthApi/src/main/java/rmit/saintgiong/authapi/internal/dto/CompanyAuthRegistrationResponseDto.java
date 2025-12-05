@@ -11,7 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CompanyAuthResponseDto {
+public class CompanyAuthRegistrationResponseDto {
     private UUID companyId;
     private String email;
     private String message;

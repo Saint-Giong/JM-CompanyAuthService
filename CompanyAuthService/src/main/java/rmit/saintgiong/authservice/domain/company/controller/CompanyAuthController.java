@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import rmit.saintgiong.authapi.internal.dto.CompanyAuthResponseDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
 import rmit.saintgiong.authapi.internal.service.CreateCompanyAuthInterface;
 
@@ -18,9 +18,9 @@ public class CompanyAuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<CompanyAuthResponseDto> registerCompany(
+    public ResponseEntity<CompanyAuthRegistrationResponseDto> registerCompany(
             @Valid @RequestBody CompanyRegistrationDto registrationDto) {
-        CompanyAuthResponseDto response = companyAuthService.registerCompany(registrationDto);
+        CompanyAuthRegistrationResponseDto response = companyAuthService.registerCompany(registrationDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
