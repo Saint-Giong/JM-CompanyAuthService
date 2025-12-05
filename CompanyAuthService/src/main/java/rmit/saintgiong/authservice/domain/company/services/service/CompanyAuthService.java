@@ -1,18 +1,19 @@
 package rmit.saintgiong.authservice.domain.company.services.service;
 
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import rmit.saintgiong.authservice.domain.company.dto.CompanyAuthResponseDto;
-import rmit.saintgiong.authservice.domain.company.dto.CompanyRegistrationDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyAuthResponseDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
+import rmit.saintgiong.authapi.internal.service.CreateCompanyAuthInterface;
+import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuth;
 
 import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-public class CompanyAuthService {
+public class CompanyAuthService implements CreateCompanyAuthInterface {
 
     private final CompanyAuthRepository companyAuthRepository;
 
@@ -22,10 +23,7 @@ public class CompanyAuthService {
         // Check if email already exists
         Optional<CompanyAuth> existingAuth = companyAuthRepository.findByEmail(registrationDto.getEmail());
         if (existingAuth.isPresent()) {
-            return CompanyAuthResponseDto.builder()
-                    .success(false)
-                    .message("Email already registered")
-                    .build();
+            throw new CompanyAccountAlreadyExisted("Email already registered");
         }
 
         // Create and save CompanyAuth

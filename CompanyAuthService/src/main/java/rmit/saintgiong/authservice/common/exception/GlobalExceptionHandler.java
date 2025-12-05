@@ -84,7 +84,7 @@ public class GlobalExceptionHandler {
         ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
                 .apiPath(request.getDescription(false).replace("uri=", ""))
                 .errorCode(HttpStatus.BAD_REQUEST)
-                .message(ex.getMessage())
+                .message("Invalid Field Data")
                 .timeStamp(LocalDateTime.now())
                 .errorFields(fieldErrors)
                 .build();
