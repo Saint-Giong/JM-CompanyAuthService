@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -15,10 +16,9 @@ import java.util.Map;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponseDto {
-    private int status;
+    private String apiPath;
+    private HttpStatus errorCode;
     private String message;
-    private String error;
-    private LocalDateTime timestamp;
-    private Map<String, String> fieldErrors; // For validation errors
-    private String path;
+    private LocalDateTime timeStamp;
+    private Map<String, String> errorFields;
 }

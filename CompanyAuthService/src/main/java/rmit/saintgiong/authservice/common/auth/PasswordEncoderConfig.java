@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.config;
+package rmit.saintgiong.authservice.common.auth;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
