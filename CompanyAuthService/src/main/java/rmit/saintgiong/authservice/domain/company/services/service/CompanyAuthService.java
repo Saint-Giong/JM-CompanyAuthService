@@ -14,7 +14,6 @@ import java.util.Optional;
 @AllArgsConstructor
 public class CompanyAuthService {
 
-
     private final CompanyAuthRepository companyAuthRepository;
 
     private final PasswordEncoder passwordEncoder;
