@@ -16,7 +16,9 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Setter @Getter @ToString
+@Setter
+@Getter
+@ToString
 @Builder
 public class CompanyAuthEntity {
     @Id

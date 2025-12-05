@@ -9,6 +9,8 @@ import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
 import rmit.saintgiong.authapi.internal.service.CreateCompanyAuthInterface;
 
+import java.util.concurrent.Callable;
+
 @RestController
 @RequestMapping("/api/v1/sgjm/auth") //TODO: keep for testing purpose, will be removed when deployed with API Gateway
 @AllArgsConstructor
@@ -18,9 +20,11 @@ public class CompanyAuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<CompanyAuthRegistrationResponseDto> registerCompany(
+    public Callable<ResponseEntity<CompanyAuthRegistrationResponseDto>> registerCompany(
             @Valid @RequestBody CompanyRegistrationDto registrationDto) {
-        CompanyAuthRegistrationResponseDto response = companyAuthService.registerCompany(registrationDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return () -> {
+            CompanyAuthRegistrationResponseDto response = companyAuthService.registerCompany(registrationDto);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        };
     }
 }

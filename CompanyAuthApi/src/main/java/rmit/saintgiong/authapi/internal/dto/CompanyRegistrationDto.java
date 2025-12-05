@@ -37,7 +37,7 @@ public class CompanyRegistrationDto {
     private String country;
 
     @Pattern(
-            regexp = "^\\+\\d{1,3}\\d{1,12}$",  // Removed the '?' to make it required
+            regexp = "^\\+\\d{1,3}\\d{1,12}$",
             message = "Phone number must start with '+' followed by 1-3 digit country code and 1-12 digits"
     )
     private String phoneNumber;
