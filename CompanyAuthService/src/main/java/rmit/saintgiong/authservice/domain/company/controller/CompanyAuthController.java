@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
-import rmit.saintgiong.authapi.internal.service.CreateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 
 import java.util.concurrent.Callable;
 
@@ -16,7 +16,7 @@ import java.util.concurrent.Callable;
 @AllArgsConstructor
 public class CompanyAuthController {
 
-    private final CreateCompanyAuthInterface companyAuthService;
+    private final InternalCreateCompanyAuthInterface companyAuthService;
 
 
     @PostMapping("/register")
