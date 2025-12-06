@@ -1,4 +1,4 @@
 package rmit.saintgiong.authapi.external.service;
 
-public interface ICompanyAuthExternal {
+public interface ExternalGetCompanyAuthInterface {
 }

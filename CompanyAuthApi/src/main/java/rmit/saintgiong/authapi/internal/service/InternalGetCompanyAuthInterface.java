@@ -1,4 +1,4 @@
 package rmit.saintgiong.authapi.internal.service;
 
-public interface ICompanyAuthInternal {
+public interface InternalGetCompanyAuthInterface {
 }
