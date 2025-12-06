@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.services.service;
+package rmit.saintgiong.authservice.domain.company.services;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;

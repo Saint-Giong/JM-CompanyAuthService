@@ -1,11 +1,10 @@
-package rmit.saintgiong.authservice.domain.company.services.service;
+package rmit.saintgiong.authservice.domain.company.services;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,6 +15,8 @@ import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
+import rmit.saintgiong.authservice.domain.company.services.CompanyAuthRepository;
+import rmit.saintgiong.authservice.domain.company.services.CompanyAuthServiceInternal;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -24,7 +25,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
