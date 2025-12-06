@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
         ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
                 .apiPath(request.getDescription(false).replace("uri=", ""))
                 .errorCode(HttpStatus.INTERNAL_SERVER_ERROR)
-                .message(exception.getMessage())
+                .message(String.valueOf(exception))
                 .timeStamp(LocalDateTime.now())
                 .build();
 
