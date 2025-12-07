@@ -25,6 +25,14 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
 
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Registers a new company with the authentication system.
+     * 
+     * @param registrationDto the company registration data transfer object containing
+     *                        the email, password, and other registration details
+     * @return a {@link CompanyAuthRegistrationResponseDto} containing the registered
+     *         company's ID, email, success status, and a confirmation message
+     */
     @Override
     @Transactional
     public CompanyAuthRegistrationResponseDto registerCompany(CompanyRegistrationDto registrationDto) {
