@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
-import rmit.saintgiong.authapi.internal.service.CreateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import java.util.UUID;
@@ -38,7 +38,7 @@ class CompanyAuthRegistrationTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean
-    private CreateCompanyAuthInterface companyAuthService;
+    private InternalCreateCompanyAuthInterface companyAuthService;
 
     private CompanyRegistrationDto validRegistrationDto;
     private UUID testCompanyId;

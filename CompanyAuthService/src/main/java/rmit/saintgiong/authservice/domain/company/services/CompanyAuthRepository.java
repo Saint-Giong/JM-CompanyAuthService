@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.services.service;
+package rmit.saintgiong.authservice.domain.company.services;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

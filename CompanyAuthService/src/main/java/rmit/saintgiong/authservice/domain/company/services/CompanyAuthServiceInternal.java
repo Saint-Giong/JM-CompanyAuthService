@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.services.service;
+package rmit.saintgiong.authservice.domain.company.services;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -7,7 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
-import rmit.saintgiong.authapi.internal.service.CreateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
@@ -18,7 +18,7 @@ import java.util.Optional;
 @Service
 @AllArgsConstructor
 @Slf4j
-public class CompanyAuthService implements CreateCompanyAuthInterface {
+public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInterface {
 
     private final CompanyAuthMapper companyAuthMapper;
     private final CompanyAuthRepository companyAuthRepository;
