@@ -41,28 +41,28 @@ public class CompanyAuthController {
             return ResponseEntity.status(HttpStatus.OK).body(response);
         };
     }
-
-    @PostMapping("/test/generate-token")
-    public ResponseEntity<TokenPairDto> generateTestToken(@RequestBody Map<String, String> request) {
-        UUID userId = UUID.fromString(request.getOrDefault("userId", UUID.randomUUID().toString()));
-        String email = request.getOrDefault("email", "test@example.com");
-        Role role = Role.valueOf(request.getOrDefault("role", "COMPANY"));
-        
-        TokenPairDto tokenPair = jweTokenService.generateTokenPair(userId, email, role);
-        return ResponseEntity.ok(tokenPair);
-    }
-
-    @PostMapping("/test/validate-access-token")
-    public ResponseEntity<TokenClaimsDto> validateAccessToken(@RequestBody Map<String, String> request) {
-        String accessToken = request.get("accessToken");
-        TokenClaimsDto claims = jweTokenService.validateAccessToken(accessToken);
-        return ResponseEntity.ok(claims);
-    }
-
-    @PostMapping("/test/refresh-token")
-    public ResponseEntity<TokenPairDto> refreshToken(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
-        TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
-        return ResponseEntity.ok(tokenPair);
-    }
+// Endpoint to test JWE token service
+//    @PostMapping("/test/generate-token")
+//    public ResponseEntity<TokenPairDto> generateTestToken(@RequestBody Map<String, String> request) {
+//        UUID userId = UUID.fromString(request.getOrDefault("userId", UUID.randomUUID().toString()));
+//        String email = request.getOrDefault("email", "test@example.com");
+//        Role role = Role.valueOf(request.getOrDefault("role", "COMPANY"));
+//
+//        TokenPairDto tokenPair = jweTokenService.generateTokenPair(userId, email, role);
+//        return ResponseEntity.ok(tokenPair);
+//    }
+//
+//    @PostMapping("/test/validate-access-token")
+//    public ResponseEntity<TokenClaimsDto> validateAccessToken(@RequestBody Map<String, String> request) {
+//        String accessToken = request.get("accessToken");
+//        TokenClaimsDto claims = jweTokenService.validateAccessToken(accessToken);
+//        return ResponseEntity.ok(claims);
+//    }
+//
+//    @PostMapping("/test/refresh-token")
+//    public ResponseEntity<TokenPairDto> refreshToken(@RequestBody Map<String, String> request) {
+//        String refreshToken = request.get("refreshToken");
+//        TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
+//        return ResponseEntity.ok(tokenPair);
+//    }
 }

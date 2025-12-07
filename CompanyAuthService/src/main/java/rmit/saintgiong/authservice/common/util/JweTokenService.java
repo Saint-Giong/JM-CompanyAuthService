@@ -176,7 +176,7 @@ public class JweTokenService {
         // Build JWE Header
         JWEHeader header = new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
                 .type(JOSEObjectType.JOSE)
-                .customParam("iss", issuer)
+                .issuer(issuer)
                 .customParam("iat", now)
                 .customParam("exp", exp)
                 .build();
@@ -219,7 +219,7 @@ public class JweTokenService {
 
             // Get header claims
             Number iat = (Number) jweObject.getHeader().getCustomParam("iat");
-            String iss = (String) jweObject.getHeader().getCustomParam("iss");
+            String iss = jweObject.getHeader().getIssuer();
 
             return TokenClaimsDto.builder()
                     .sub(UUID.fromString((String) payloadMap.get("sub")))
