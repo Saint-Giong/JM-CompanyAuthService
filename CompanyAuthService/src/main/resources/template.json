@@ -1,0 +1,8 @@
+{
+  "TemplateName": "RegistrationTemplate",
+  "TemplateContent": {
+    "Subject": "Welcome, {{name}}!",
+    "Html": "<h1>Welcome {{name}}!</h1><a href=\"{{link}}\">Verify</a>",
+    "Text": "Welcome {{name}}! Verify here: {{link}}"
+  }
+}

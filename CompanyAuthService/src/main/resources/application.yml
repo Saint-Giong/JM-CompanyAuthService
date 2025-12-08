@@ -49,3 +49,9 @@ jwe:
   # Load keys from classpath files (more reliable than env vars for multi-line keys)
   public-key-path: ${JWE_PUBLIC_KEY_PATH:classpath:keys/public_key.pem}
   private-key-path: ${JWE_PRIVATE_KEY_PATH:classpath:keys/private_key.pem}
+
+aws:
+  accessKeyId: ${AWS_ACCESS_KEY}
+  secretAccessKey: ${AWS_SECRET_KEY}
+  region: ${AWS_REGION}
+  ses.sender: ${AWS_SENDER}
