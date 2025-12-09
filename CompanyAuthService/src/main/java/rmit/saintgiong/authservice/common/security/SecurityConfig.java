@@ -16,7 +16,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/sgjm/auth/register").permitAll()  // Allow public access to registration
-                .anyRequest().authenticated()                                 
+                .anyRequest().permitAll()
             )
             .httpBasic(basic -> {})
             .csrf(AbstractHttpConfigurer::disable);
