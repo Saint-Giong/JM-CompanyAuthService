@@ -48,9 +48,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.github.saintgiong</groupId>
+            <groupId>devision.saintgiong</groupId>
             <artifactId>sg-shared-dto-package</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.1-SNAPSHOT-17361509122025</version>
         </dependency>
     </dependencies>
 
