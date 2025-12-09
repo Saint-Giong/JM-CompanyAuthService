@@ -11,21 +11,22 @@ COPY pom.xml ./pom.xml
 COPY CompanyAuthApi/pom.xml ./CompanyAuthApi/pom.xml
 COPY CompanyAuthService/pom.xml ./CompanyAuthService/pom.xml
 
-# COPY settings.xml .
-# RUN --mount=type=secret,id=github-username,env=GITHUB_USERNAME,required=true \
-#   --mount=type=secret,id=github-token,env=GITHUB_TOKEN,required=true \
-#   --mount=type=cache,target=/root/.m2 \
-#   cp ./settings.xml /root/.m2 && \
-#   ./mvnw dependency:go-offline -U
+# Copy outside cache
+COPY ../settings.xml /
 
-RUN ./mvnw dependency:go-offline -U
+RUN --mount=type=secret,id=github-username,env=GITHUB_USERNAME,required=true \
+    --mount=type=secret,id=github-token,env=GITHUB_TOKEN,required=true \
+    --mount=type=cache,target=/root/.m2 \
+    cp ./settings.xml /root/.m2 && \
+    ./mvnw dependency:go-offline -U
 
 # Copy the full source code
 COPY CompanyAuthApi/src ./CompanyAuthApi/src
 COPY CompanyAuthService/src ./CompanyAuthService/src
 
 # Build the Spring Boot application
-RUN ./mvnw clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 && \
+    ./mvnw clean package -DskipTests
 
 # Application Run
 FROM eclipse-temurin:17-jdk AS runner
