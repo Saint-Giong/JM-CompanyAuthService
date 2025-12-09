@@ -30,9 +30,9 @@ RUN ./mvnw clean package -DskipTests
 # Application Run
 FROM eclipse-temurin:17-jdk AS runner
 
-# Add a non-root user for security
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+## Add a non-root user for security
+#RUN addgroup -S spring && adduser -S spring -G spring
+#USER spring:spring
 
 WORKDIR /app
 
