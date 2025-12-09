@@ -8,22 +8,26 @@ import org.springframework.stereotype.Service;
 import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.util.EmailService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 @Slf4j
-public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInterface {
+public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInterface, InternalUpdateCompanyAuthInterface {
 
     private final CompanyAuthMapper companyAuthMapper;
     private final CompanyAuthRepository companyAuthRepository;
 
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     /**
      * Registers a new company with the authentication system.
@@ -52,13 +56,24 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
 
         //TODO: Add kafka publisher to create profile
-        
 
+
+        //TODO: Generate activation link
+        String activationToken = UUID.randomUUID().toString();
+
+
+        emailService.sendVerificationEmail(registrationDto.getEmail(),registrationDto.getCompanyName(),activationToken);
         return CompanyAuthRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
                 .email(savedAuth.getEmail())
                 .success(true)
                 .message("Company registered successfully. Please check your email for activation link.")
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void activateCompanyAccount(String activationToken) {
+
     }
 }
