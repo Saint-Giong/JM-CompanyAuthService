@@ -12,6 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.util.EmailService;
+import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.common.util.OtpService;
+import rmit.saintgiong.authservice.common.util.TokenStorageService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
@@ -23,6 +27,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +43,18 @@ class CompanyAuthServiceInternalTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private TokenStorageService tokenStorageService;
+
+    @Mock
+    private OtpService otpService;
+
+    @Mock
+    private JweTokenService jweTokenService;
 
     @InjectMocks
     private CompanyAuthServiceInternal companyAuthServiceInternal;
@@ -101,6 +119,8 @@ class CompanyAuthServiceInternalTest {
             when(passwordEncoder.encode(TEST_PASSWORD)).thenReturn(ENCODED_PASSWORD);
             when(companyAuthMapper.toEntity(any(CompanyAuth.class))).thenReturn(companyAuthEntity);
             when(companyAuthRepository.save(any(CompanyAuthEntity.class))).thenReturn(savedCompanyAuthEntity);
+            when(otpService.generateOtp(testCompanyId)).thenReturn("123456");
+            doNothing().when(emailService).sendOtpEmail(anyString(), anyString(), anyString());
 
             // Act
             CompanyRegistrationResponseDto response = companyAuthServiceInternal.registerCompany(validRegistrationDto);
@@ -110,7 +130,11 @@ class CompanyAuthServiceInternalTest {
             assertThat(response.getCompanyId()).isEqualTo(testCompanyId);
             assertThat(response.getEmail()).isEqualTo(TEST_EMAIL);
             assertThat(response.isSuccess()).isTrue();
-            assertThat(response.getMessage()).isEqualTo("Company registered successfully. Please check your email for activation link.");
+            assertThat(response.getMessage()).isEqualTo( "Company registered successfully. Please check your email for the OTP to activate your account.");
+            
+            // Verify OTP generation and email sending
+            verify(otpService, times(1)).generateOtp(testCompanyId);
+            verify(emailService, times(1)).sendOtpEmail(eq(TEST_EMAIL), eq("Test Company"), eq("123456"));
         }
     }
 
@@ -130,6 +154,8 @@ class CompanyAuthServiceInternalTest {
             when(passwordEncoder.encode(TEST_PASSWORD)).thenReturn(ENCODED_PASSWORD);
             when(companyAuthMapper.toEntity(any(CompanyAuth.class))).thenReturn(companyAuthEntity);
             when(companyAuthRepository.save(any(CompanyAuthEntity.class))).thenReturn(savedCompanyAuthEntity);
+            when(otpService.generateOtp(testCompanyId)).thenReturn("123456");
+            doNothing().when(emailService).sendOtpEmail(anyString(), anyString(), anyString());
 
             // Act
             companyAuthServiceInternal.registerCompany(validRegistrationDto);

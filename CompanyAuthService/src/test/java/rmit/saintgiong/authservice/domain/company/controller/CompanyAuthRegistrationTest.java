@@ -9,6 +9,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,8 +18,15 @@ import org.springframework.test.web.servlet.MvcResult;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import rmit.saintgiong.authservice.common.util.EmailService;
+import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.common.util.OtpService;
+import rmit.saintgiong.authservice.common.util.TokenStorageService;
+import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
+
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -29,16 +38,39 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @DisplayName("Company Auth Registration Tests")
 class CompanyAuthRegistrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private InternalCreateCompanyAuthInterface companyAuthService;
+
+    @MockitoBean
+    private InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
+
+    @MockitoBean
+    private InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
+
+    @MockitoBean
+    private JweTokenService jweTokenService;
+
+    @MockitoBean
+    private CompanyAuthMapper companyAuthMapper;
+
+    @MockitoBean
+    private EmailService emailService;
+
+    @MockitoBean
+    private OtpService otpService;
+
+    @MockitoBean
+    private TokenStorageService tokenStorageService;
 
     private CompanyRegistrationRequestDto validRegistrationDto;
     private UUID testCompanyId;
