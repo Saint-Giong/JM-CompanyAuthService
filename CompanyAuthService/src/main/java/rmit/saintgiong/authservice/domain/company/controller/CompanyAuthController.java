@@ -242,4 +242,10 @@ public class CompanyAuthController {
                     .build());
         };
     }
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "hello world";
+    }
+
 }
