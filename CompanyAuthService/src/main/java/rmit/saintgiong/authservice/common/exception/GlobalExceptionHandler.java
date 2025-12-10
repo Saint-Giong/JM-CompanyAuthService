@@ -163,5 +163,25 @@ public class GlobalExceptionHandler {
                 .body(errorResponseDto);
     }
 
+    @ExceptionHandler({
+            OtpVerificationLockedException.class,
+            OtpResendCooldownException.class,
+            OtpHourlyLimitExceededException.class
+    })
+    public ResponseEntity<ErrorResponseDto> handleOtpRateLimitExceptions(
+            RuntimeException exception,
+            WebRequest request
+    ) {
+        ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
+                .apiPath(request.getDescription(false).replace("uri=", ""))
+                .errorCode(HttpStatus.TOO_MANY_REQUESTS)
+                .message(exception.getMessage())
+                .timeStamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(errorResponseDto);
+    }
 
 }
