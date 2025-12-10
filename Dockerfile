@@ -1,47 +1,48 @@
 # APPLICATION BUILD
-ARG MODULE_ORIGIN=CompanyAuth
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:17-jdk AS builder
 WORKDIR /app
-ARG MODULE_ORIGIN
+
+#ARG GITHUB_USERNAME
+#ARG GITHUB_U
 
 # Maven runner
 COPY mvnw .
 COPY .mvn .mvn
 
 # Dependency
-COPY pom.xml .
-COPY ${MODULE_ORIGIN}Api/pom.xml ${MODULE_ORIGIN}Api/pom.xml
-COPY ${MODULE_ORIGIN}Service/pom.xml ${MODULE_ORIGIN}Service/pom.xml
+COPY pom.xml ./pom.xml
+COPY CompanyAuthApi/pom.xml ./CompanyAuthApi/pom.xml
+COPY CompanyAuthService/pom.xml ./CompanyAuthService/pom.xml
 
-# COPY settings.xml .
+# Copy outside cache
+COPY settings.xml /
 
-# RUN --mount=type=secret,id=github-username,env=GITHUB_USERNAME,required=true \
-#   --mount=type=secret,id=github-token,env=GITHUB_TOKEN,required=true \
-#   --mount=type=cache,target=/root/.m2 \
-#   cp ./settings.xml /root/.m2 && \
-#   ./mvnw dependency:go-offline -U
-
-RUN ./mvnw dependency:go-offline -U
+RUN --mount=type=secret,id=GITHUB_USERNAME,env=GITHUB_USERNAME,required=true  \
+    --mount=type=secret,id=GITHUB_KEY,env=GITHUB_KEY,required=true \
+    --mount=type=cache,target=/root/.m2 \
+    cp /settings.xml /root/.m2 && \
+    cat /root/.m2/settings.xml && \
+    ./mvnw dependency:go-offline -U
 
 # Copy the full source code
-COPY ${MODULE_ORIGIN}Api/src ${MODULE_ORIGIN}Api/src
-COPY ${MODULE_ORIGIN}Service/src ${MODULE_ORIGIN}Service/src
+COPY CompanyAuthApi/src ./CompanyAuthApi/src
+COPY CompanyAuthService/src ./CompanyAuthService/src
 
 # Build the Spring Boot application
-RUN ./mvnw clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw clean package -DskipTests
 
 # Application Run
-FROM eclipse-temurin:21-jre-alpine AS runner
-ARG MODULE_ORIGIN
+FROM eclipse-temurin:17-jdk AS runner
 
-# Add a non-root user for security
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+## Add a non-root user for security
+#RUN addgroup -S spring && adduser -S spring -G spring
+#USER spring:spring
 
 WORKDIR /app
 
 # Copy the built jar from the builder stage
-COPY --from=builder /app/${MODULE_ORIGIN}Service/target/*.jar app.jar
+COPY --from=builder /app/CompanyAuthService/target/*.jar app.jar
 
 # Expose the default Spring Boot port (you can override in compose)
 EXPOSE 8080
