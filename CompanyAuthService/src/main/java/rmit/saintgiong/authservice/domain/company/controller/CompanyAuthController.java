@@ -170,6 +170,9 @@ public class CompanyAuthController {
             @CookieValue(name = AUTH_COOKIE_NAME, required = false) String authToken,
             HttpServletResponse response) {
         return () -> {
+
+            //TODO: use filter and security to check for cookie and get id from authenticated session instead
+            //TODO: manually checking in controller method
             if (authToken == null || authToken.isEmpty()) {
                 throw new InvalidTokenException("Authentication token not found. Please login first.");
             }
@@ -219,6 +222,9 @@ public class CompanyAuthController {
     public Callable<ResponseEntity<OtpVerificationResponseDto>> resendOtp(
             @CookieValue(name = AUTH_COOKIE_NAME, required = false) String authToken) {
         return () -> {
+
+            //TODO: use filter and security to check for cookie and get id from authenticated session instead
+            //TODO: manually checking in controller method
             if (authToken == null || authToken.isEmpty()) {
                 throw new InvalidTokenException("Authentication token not found. Please login first.");
             }
