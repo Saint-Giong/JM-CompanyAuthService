@@ -61,3 +61,15 @@ aws:
   secretAccessKey: ${AWS_SECRET_KEY}
   region: ${AWS_REGION}
   ses.sender: ${AWS_SENDER}
+
+# OpenAPI/Swagger Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false
