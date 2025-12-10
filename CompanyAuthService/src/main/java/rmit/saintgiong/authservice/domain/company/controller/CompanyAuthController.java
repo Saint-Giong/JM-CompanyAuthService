@@ -27,4 +27,9 @@ public class CompanyAuthController {
             return ResponseEntity.status(HttpStatus.OK).body(response);
         };
     }
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "hello world";
+    }
 }
