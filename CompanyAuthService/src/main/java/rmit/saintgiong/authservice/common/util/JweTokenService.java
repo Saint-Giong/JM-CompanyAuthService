@@ -45,9 +45,6 @@ public class JweTokenService {
     @Value("${jwe.refresh-token-ttl-seconds:604800}")  // Default: 7 days
     private long refreshTokenTtlSeconds;
 
-    @Value("${jwe.activation-token-ttl-seconds:86400}")  // Default: 24 hours
-    private long activationTokenTtlSeconds;
-
     private RSAPublicKey publicKey;
     private RSAPrivateKey privateKey;
 
@@ -74,8 +71,8 @@ public class JweTokenService {
         this.privateKey = keyLoader.loadPrivateKey(privateKeyPem);
         
         log.info("JWE Token Service initialized with issuer: {}", issuer);
-        log.info("Access token TTL: {} seconds, Refresh token TTL: {} seconds, Activation token TTL: {} seconds", 
-                accessTokenTtlSeconds, refreshTokenTtlSeconds, activationTokenTtlSeconds);
+        log.info("Access token TTL: {} seconds, Refresh token TTL: {} seconds",
+                accessTokenTtlSeconds, refreshTokenTtlSeconds);
     }
 
     /**
@@ -105,7 +102,6 @@ public class JweTokenService {
                     .refreshToken(refreshToken)
                     .accessTokenExpiresIn(accessTokenTtlSeconds)
                     .refreshTokenExpiresIn(refreshTokenTtlSeconds)
-                    .tokenType("Bearer")
                     .build();
         } catch (JOSEException e) {
             log.error("Failed to generate token pair for user: {}", userId, e);
@@ -169,7 +165,6 @@ public class JweTokenService {
                     .refreshToken(newRefreshToken)
                     .accessTokenExpiresIn(accessTokenTtlSeconds)
                     .refreshTokenExpiresIn(refreshTokenTtlSeconds)
-                    .tokenType("Bearer")
                     .build();
         } catch (JOSEException e) {
             log.error("Failed to refresh token for user: {}", claims.getSub(), e);
@@ -199,39 +194,6 @@ public class JweTokenService {
         }
 
         return claims;
-    }
-
-    /**
-     * Revokes all tokens for a specific user (logout from all devices).
-     * Note: For access tokens, the caller should provide the current access token
-     * to add it to the blocklist.
-     *
-     * @param userId The user/company ID
-     */
-    public void revokeAllUserTokens(UUID userId) {
-        tokenStorageService.revokeAllRefreshTokens(userId);
-    }
-
-    /**
-     * Revokes a specific access token by adding it to the blocklist.
-     *
-     * @param accessToken The access token to revoke
-     */
-    public void revokeAccessToken(String accessToken) {
-        TokenClaimsDto claims = validateAndDecrypt(accessToken);
-        long now = Instant.now().getEpochSecond();
-        long remainingTtl = claims.getExp() - now;
-        tokenStorageService.blockAccessToken(claims.getJti(), remainingTtl);
-    }
-
-    /**
-     * Revokes a specific refresh token.
-     *
-     * @param refreshToken The refresh token to revoke
-     */
-    public void revokeRefreshToken(String refreshToken) {
-        TokenClaimsDto claims = validateAndDecrypt(refreshToken);
-        tokenStorageService.revokeRefreshToken(claims.getJti());
     }
 
     // Generates a single JWE token with the specified parameters.
@@ -307,30 +269,4 @@ public class JweTokenService {
         }
     }
 
-    /**
-     * Inspects a token and returns all components (for debugging).
-     *
-     * @param jweString The JWE token string to inspect
-     * @return Map containing header, payload, and other token components
-     */
-    public Map<String, Object> inspectToken(String jweString) {
-        try {
-            JWEObject jweObject = JWEObject.parse(jweString);
-            jweObject.decrypt(new RSADecrypter(privateKey));
-
-            Map<String, Object> report = new LinkedHashMap<>();
-            report.put("header", jweObject.getHeader().toJSONObject());
-            report.put("payload", jweObject.getPayload().toJSONObject());
-            report.put("encrypted_key", jweObject.getEncryptedKey() != null ? 
-                    jweObject.getEncryptedKey().toString() : "null");
-            report.put("iv", jweObject.getIV() != null ? jweObject.getIV().toString() : "null");
-            report.put("ciphertext", jweObject.getCipherText().toString());
-            report.put("auth_tag", jweObject.getAuthTag() != null ? 
-                    jweObject.getAuthTag().toString() : "null");
-
-            return report;
-        } catch (Exception e) {
-            throw new RuntimeException("Could not inspect token", e);
-        }
-    }
 }

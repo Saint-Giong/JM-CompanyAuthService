@@ -9,14 +9,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
-import rmit.saintgiong.authservice.domain.company.services.CompanyAuthRepository;
-import rmit.saintgiong.authservice.domain.company.services.CompanyAuthServiceInternal;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -44,7 +42,7 @@ class CompanyAuthServiceInternalTest {
     private CompanyAuthServiceInternal companyAuthServiceInternal;
 
     // Test data
-    private CompanyRegistrationDto validRegistrationDto;
+    private CompanyRegistrationRequestDto validRegistrationDto;
     private CompanyAuth companyAuth;
     private CompanyAuthEntity companyAuthEntity;
     private CompanyAuthEntity savedCompanyAuthEntity;
@@ -57,7 +55,7 @@ class CompanyAuthServiceInternalTest {
     void setUp() {
         testCompanyId = UUID.randomUUID();
 
-        validRegistrationDto = new CompanyRegistrationDto(
+        validRegistrationDto = new CompanyRegistrationRequestDto(
                 "Test Company",
                 TEST_EMAIL,
                 TEST_PASSWORD,
@@ -105,7 +103,7 @@ class CompanyAuthServiceInternalTest {
             when(companyAuthRepository.save(any(CompanyAuthEntity.class))).thenReturn(savedCompanyAuthEntity);
 
             // Act
-            CompanyAuthRegistrationResponseDto response = companyAuthServiceInternal.registerCompany(validRegistrationDto);
+            CompanyRegistrationResponseDto response = companyAuthServiceInternal.registerCompany(validRegistrationDto);
 
             // Assert
             assertThat(response).isNotNull();

@@ -13,8 +13,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,13 +40,13 @@ class CompanyAuthRegistrationTest {
     @MockitoBean
     private InternalCreateCompanyAuthInterface companyAuthService;
 
-    private CompanyRegistrationDto validRegistrationDto;
+    private CompanyRegistrationRequestDto validRegistrationDto;
     private UUID testCompanyId;
 
     @BeforeEach
     void setUp() {
         testCompanyId = UUID.randomUUID();
-        validRegistrationDto = new CompanyRegistrationDto(
+        validRegistrationDto = new CompanyRegistrationRequestDto(
                 "Test Company",
                 "test@example.com",
                 "SecurePass123!",
@@ -67,14 +67,14 @@ class CompanyAuthRegistrationTest {
         @DisplayName("Should register company successfully with valid data")
         void testRegisterCompany_ValidData_Success() throws Exception {
             // Arrange
-            CompanyAuthRegistrationResponseDto mockResponse = CompanyAuthRegistrationResponseDto.builder()
+            CompanyRegistrationResponseDto mockResponse = CompanyRegistrationResponseDto.builder()
                     .companyId(testCompanyId)
                     .email("test@example.com")
                     .success(true)
                     .message("Company registered successfully. Please check your email for activation link.")
                     .build();
 
-            when(companyAuthService.registerCompany(any(CompanyRegistrationDto.class)))
+            when(companyAuthService.registerCompany(any(CompanyRegistrationRequestDto.class)))
                     .thenReturn(mockResponse);
 
             // Act & Assert
@@ -91,7 +91,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.message").value("Company registered successfully. Please check your email for activation link."));
 
-            verify(companyAuthService, times(1)).registerCompany(any(CompanyRegistrationDto.class));
+            verify(companyAuthService, times(1)).registerCompany(any(CompanyRegistrationRequestDto.class));
         }
 
     }
@@ -305,7 +305,7 @@ class CompanyAuthRegistrationTest {
         @Test
         @DisplayName("Should fail when email already exists")
         void testRegisterCompany_DuplicateEmail_Fail() throws Exception {
-            when(companyAuthService.registerCompany(any(CompanyRegistrationDto.class)))
+            when(companyAuthService.registerCompany(any(CompanyRegistrationRequestDto.class)))
                     .thenThrow(new CompanyAccountAlreadyExisted("Email already registered"));
 
             MvcResult result = mockMvc.perform(post("/api/v1/sgjm/auth/register")
@@ -318,7 +318,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Email already registered"));
 
-            verify(companyAuthService, times(1)).registerCompany(any(CompanyRegistrationDto.class));
+            verify(companyAuthService, times(1)).registerCompany(any(CompanyRegistrationRequestDto.class));
         }
     }
 
@@ -331,7 +331,7 @@ class CompanyAuthRegistrationTest {
         @Test
         @DisplayName("Should return multiple validation errors when multiple fields are invalid")
         void testRegisterCompany_MultipleInvalidFields_Fail() throws Exception {
-            CompanyRegistrationDto invalidDto = new CompanyRegistrationDto(
+            CompanyRegistrationRequestDto invalidDto = new CompanyRegistrationRequestDto(
                     "",          // invalid - blank
                     "invalid",   // invalid - not email format
                     "weak",      // invalid - too short and missing requirements

@@ -129,5 +129,39 @@ public class GlobalExceptionHandler {
                 .body(errorResponseDto);
     }
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidCredentialsException(
+            InvalidCredentialsException exception,
+            WebRequest request
+    ) {
+        ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
+                .apiPath(request.getDescription(false).replace("uri=", ""))
+                .errorCode(HttpStatus.UNAUTHORIZED)
+                .message(exception.getMessage())
+                .timeStamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(errorResponseDto);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalStateException(
+            IllegalStateException exception,
+            WebRequest request
+    ) {
+        ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
+                .apiPath(request.getDescription(false).replace("uri=", ""))
+                .errorCode(HttpStatus.BAD_REQUEST)
+                .message(exception.getMessage())
+                .timeStamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponseDto);
+    }
+
 
 }

@@ -25,8 +25,4 @@ public class TokenPairDto {
     
     // Refresh token expiration time in seconds.
     private long refreshTokenExpiresIn;
-    
-    // Token type (always "Bearer").
-    @Builder.Default
-    private String tokenType = "Bearer";
 }

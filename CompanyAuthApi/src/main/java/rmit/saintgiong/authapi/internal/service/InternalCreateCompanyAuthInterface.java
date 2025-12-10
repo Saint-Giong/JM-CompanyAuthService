@@ -1,8 +1,8 @@
 package rmit.saintgiong.authapi.internal.service;
 
-import rmit.saintgiong.authapi.internal.dto.CompanyAuthRegistrationResponseDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 
 public interface InternalCreateCompanyAuthInterface {
-    public CompanyAuthRegistrationResponseDto registerCompany(CompanyRegistrationDto registrationDto);
+    public CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto registrationDto);
 }

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CompanyRegistrationDto {
+public class CompanyRegistrationRequestDto {
 
     @NotBlank(message = "Company name is required")
     private String companyName;

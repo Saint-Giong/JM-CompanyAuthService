@@ -38,31 +38,30 @@ public class EmailService {
     }
 
     /**
-     * Sends a verification email to a newly registered user.
+     * Sends an OTP verification email to a user for account activation.
      *
      * @param recipientEmail The recipient's email address
      * @param userName       The user's display name
-     * @param activationLink The activation link for account verification
+     * @param otp            The 6-digit OTP code
      */
-    public void sendVerificationEmail(String recipientEmail, String userName, String activationLink) {
+    public void sendOtpEmail(String recipientEmail, String userName, String otp) {
+        // Prepare Data with OTP
+        String templateData = String.format("{\"name\":\"%s\", \"otp\":\"%s\"}", userName, otp);
 
-        // Prepare Data
-        String templateData = String.format("{\"name\":\"%s\", \"link\":\"%s\"}", userName, activationLink);
-
-        //Build Request
+        // Build Request
         SendEmailRequest request = SendEmailRequest.builder()
                 .fromEmailAddress(senderEmail)
                 .destination(d -> d.toAddresses(recipientEmail))
                 .content(c -> c.template(t -> t
-                        .templateName("RegistrationTemplate") // Must match AWS Console Name
+                        .templateName("OTPVerificationTemplate") // Must match AWS Console Name
                         .templateData(templateData)
                 ))
                 .build();
 
-        //Send
+        // Send
         try {
             sesClient.sendEmail(request);
-            System.out.println("Email sent to " + recipientEmail);
+            System.out.println("OTP email sent to " + recipientEmail);
         } catch (SesV2Exception e) {
             System.err.println("AWS SES Error: " + e.awsErrorDetails().errorMessage());
             throw e;
