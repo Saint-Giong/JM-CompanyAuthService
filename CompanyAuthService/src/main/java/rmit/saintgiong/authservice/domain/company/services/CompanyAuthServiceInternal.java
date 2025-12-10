@@ -10,13 +10,15 @@ import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
+import rmit.saintgiong.authservice.common.exception.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.util.EmailService;
+import rmit.saintgiong.authservice.common.util.TokenStorageService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -28,6 +30,7 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
 
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final TokenStorageService tokenStorageService;
 
     /**
      * Registers a new company with the authentication system.
@@ -57,12 +60,11 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
 
         //TODO: Add kafka publisher to create profile
 
+        // Generate UUID-based activation token and store in Redis
+        String activationToken = java.util.UUID.randomUUID().toString();
+        tokenStorageService.storeActivationToken(activationToken, savedAuth.getCompanyId(), registrationDto.getEmail());
 
-        //TODO: Generate activation link
-        String activationToken = UUID.randomUUID().toString();
-
-
-        emailService.sendVerificationEmail(registrationDto.getEmail(),registrationDto.getCompanyName(),activationToken);
+        emailService.sendVerificationEmail(registrationDto.getEmail(), registrationDto.getCompanyName(), activationToken);
         return CompanyAuthRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
                 .email(savedAuth.getEmail())
@@ -74,6 +76,26 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
     @Override
     @Transactional
     public void activateCompanyAccount(String activationToken) {
-
+        // Retrieve activation token data from Redis
+        String[] tokenData = tokenStorageService.getActivationTokenData(activationToken);
+        if (tokenData == null) {
+            throw new InvalidTokenException("Activation token has been used or expired");
+        }
+        
+        java.util.UUID companyId = java.util.UUID.fromString(tokenData[0]);
+        String email = tokenData[1];
+        
+        // Find the company by ID
+        CompanyAuthEntity companyAuth = companyAuthRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+        
+        // Activate the company account
+        companyAuth.setActivated(true);
+        companyAuthRepository.save(companyAuth);
+        
+        // Consume the activation token (remove from Redis)
+        tokenStorageService.consumeActivationToken(activationToken);
+        
+        log.info("Company account activated successfully for: {}", email);
     }
 }

@@ -16,6 +16,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
 
 management:
   endpoints:
@@ -46,6 +52,7 @@ jwe:
   issuer: ${JWE_ISSUER:JM_BACKEND}
   access-token-ttl-seconds: ${JWE_ACCESS_TOKEN_TTL:900}
   refresh-token-ttl-seconds: ${JWE_REFRESH_TOKEN_TTL:604800}
+  activation-token-ttl-seconds: ${JWE_ACTIVATION_TOKEN_TTL:86400}
   # Load keys from classpath files (more reliable than env vars for multi-line keys)
   public-key-path: ${JWE_PUBLIC_KEY_PATH:classpath:keys/public_key.pem}
   private-key-path: ${JWE_PRIVATE_KEY_PATH:classpath:keys/private_key.pem}

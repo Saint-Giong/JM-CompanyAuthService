@@ -54,4 +54,9 @@ public class TokenClaimsDto {
      */
     private String iss;
 
+    /**
+     * JWT ID - unique identifier for the token.
+     */
+    private String jti;
+
 }
