@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.sesv2.model.*;
 
 import jakarta.annotation.PostConstruct;
 
+// Service for sending emails using AWS SES (Simple Email Service).
 @Service
 public class EmailService {
 
@@ -36,6 +37,13 @@ public class EmailService {
                 .build();
     }
 
+    /**
+     * Sends a verification email to a newly registered user.
+     *
+     * @param recipientEmail The recipient's email address
+     * @param userName       The user's display name
+     * @param activationLink The activation link for account verification
+     */
     public void sendVerificationEmail(String recipientEmail, String userName, String activationLink) {
 
         // Prepare Data

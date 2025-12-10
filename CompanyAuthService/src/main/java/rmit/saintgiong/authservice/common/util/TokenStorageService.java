@@ -9,12 +9,10 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Service for managing token storage in Redis.
- * Uses blocklist approach for access tokens (store revoked tokens).
- * Uses whitelist approach for refresh tokens (store valid tokens).
- * Stores activation tokens for account activation.
- */
+// Service for managing token storage in Redis.
+// Uses blocklist approach for access tokens (store revoked tokens).
+// Uses whitelist approach for refresh tokens (store valid tokens).
+// Stores activation tokens for account activation.
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -36,7 +34,7 @@ public class TokenStorageService {
     @Value("${jwe.activation-token-ttl-seconds:86400}")
     private long activationTokenTtlSeconds;
 
-    // ==================== ACCESS TOKEN BLOCKLIST ====================
+    // Access Token Blocklist
 
     /**
      * Adds an access token to the blocklist (for revocation).
@@ -67,7 +65,7 @@ public class TokenStorageService {
         return Boolean.TRUE.equals(exists);
     }
 
-    // ==================== REFRESH TOKEN WHITELIST ====================
+    // Refresh Token Whitelist
 
     /**
      * Stores a refresh token in Redis (whitelist approach).
@@ -111,7 +109,7 @@ public class TokenStorageService {
         log.debug("Revoked refresh token {}", tokenId);
     }
 
-    // ==================== ACTIVATION TOKEN ====================
+    // Activation Token
 
     /**
      * Stores an activation token in Redis.
@@ -155,7 +153,7 @@ public class TokenStorageService {
         log.debug("Consumed activation token {}", tokenId);
     }
 
-    // ==================== BULK OPERATIONS ====================
+    // Bulk Operations
 
     /**
      * Revokes all refresh tokens for a specific user (logout from all devices).
@@ -204,7 +202,7 @@ public class TokenStorageService {
         log.info("Revoked all refresh tokens for user {}", userId);
     }
 
-    // ==================== UTILITY METHODS ====================
+    // Utility Methods
 
     /**
      * Gets the TTL for access tokens.

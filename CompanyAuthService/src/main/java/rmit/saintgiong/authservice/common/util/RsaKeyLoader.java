@@ -8,9 +8,17 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
+// Utility component for loading RSA public and private keys from PEM format.
 @Component
 public class RsaKeyLoader {
 
+    /**
+     * Loads an RSA public key from PEM-encoded string.
+     *
+     * @param pem The PEM-encoded public key string
+     * @return The RSA public key
+     * @throws Exception If key parsing fails
+     */
     public RSAPublicKey loadPublicKey(String pem) throws Exception {
         String publicKeyPEM = pem
                 .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -23,6 +31,13 @@ public class RsaKeyLoader {
         return (RSAPublicKey) keyFactory.generatePublic(keySpec);
     }
 
+    /**
+     * Loads an RSA private key from PEM-encoded string.
+     *
+     * @param pem The PEM-encoded private key string
+     * @return The RSA private key
+     * @throws Exception If key parsing fails
+     */
     public RSAPrivateKey loadPrivateKey(String pem) throws Exception {
         String privateKeyPEM = pem
                 .replace("-----BEGIN PRIVATE KEY-----", "")

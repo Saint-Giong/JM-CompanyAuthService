@@ -24,10 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Service for generating and validating JWE (JSON Web Encryption) tokens.
- * Integrates with Redis for token storage and validation.
- */
+// Service for generating and validating JWE (JSON Web Encryption) tokens.
+// Integrates with Redis for token storage and validation.
 @Service
 @Slf4j
 public class JweTokenService {
@@ -236,9 +234,7 @@ public class JweTokenService {
         tokenStorageService.revokeRefreshToken(claims.getJti());
     }
 
-    /**
-     * Generates a single JWE token with the specified parameters.
-     */
+    // Generates a single JWE token with the specified parameters.
     private String generateToken(UUID userId, String email, Role role, TokenType tokenType, long ttlSeconds, String tokenId) 
             throws JOSEException {
         
@@ -270,9 +266,7 @@ public class JweTokenService {
         return jweObject.serialize();
     }
 
-    /**
-     * Decrypts and validates a JWE token.
-     */
+    // Decrypts and validates a JWE token.
     private TokenClaimsDto validateAndDecrypt(String jweString) {
         try {
             JWEObject jweObject = JWEObject.parse(jweString);
@@ -315,6 +309,9 @@ public class JweTokenService {
 
     /**
      * Inspects a token and returns all components (for debugging).
+     *
+     * @param jweString The JWE token string to inspect
+     * @return Map containing header, payload, and other token components
      */
     public Map<String, Object> inspectToken(String jweString) {
         try {

@@ -1,8 +1,6 @@
 package rmit.saintgiong.authservice.common.exception;
 
-/**
- * Exception thrown when a token is invalid or malformed.
- */
+// Exception thrown when a token is invalid or malformed.
 public class InvalidTokenException extends RuntimeException {
     
     public InvalidTokenException(String message) {

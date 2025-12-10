@@ -6,10 +6,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-/**
- * Redis configuration for token storage.
- * Configures RedisTemplate with String serializers for keys and values.
- */
+// Redis configuration for token storage.
+// Configures RedisTemplate with String serializers for keys and values.
 @Configuration
 public class RedisConfig {
 

@@ -9,54 +9,36 @@ import rmit.saintgiong.authservice.common.auth.TokenType;
 
 import java.util.UUID;
 
-/**
- * DTO representing the claims/payload contained in a JWE token.
- * This data is encrypted in the token and cannot be read by unauthorized parties.
- */
+// DTO representing the claims/payload contained in a JWE token.
+// This data is encrypted in the token and cannot be read by unauthorized parties.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class TokenClaimsDto {
     
-    /**
-     * Subject - the user/company ID.
-     */
+    // Subject - the company ID.
     private UUID sub;
     
-    /**
-     * User email.
-     */
+    // User email.
     private String email;
     
-    /**
-     * User role.
-     */
+    // User role.
     private Role role;
     
-    /**
-     * Token type (ACCESS or REFRESH).
-     */
+    // Token type (ACCESS or REFRESH).
     private TokenType type;
     
-    /**
-     * Issued at timestamp (epoch seconds).
-     */
+    // Issued at timestamp (epoch seconds).
     private long iat;
     
-    /**
-     * Expiration timestamp (epoch seconds).
-     */
+    // Expiration timestamp (epoch seconds).
     private long exp;
     
-    /**
-     * Token issuer.
-     */
+    // Token issuer.
     private String iss;
 
-    /**
-     * JWT ID - unique identifier for the token.
-     */
+    // JWT ID - unique identifier for the token.
     private String jti;
 
 }
