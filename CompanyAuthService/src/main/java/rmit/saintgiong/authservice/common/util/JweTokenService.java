@@ -5,6 +5,7 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -85,18 +86,27 @@ public class JweTokenService {
      * @param role   The user role
      * @return TokenPairDto containing both tokens and their expiration info
      */
-    public TokenPairDto generateTokenPair(UUID userId, String email, Role role) {
+    public TokenPairDto generateTokenPair(UUID userId, String email, Role role, Boolean isActivated) {
         try {
+
             String accessTokenId = UUID.randomUUID().toString();
             String refreshTokenId = UUID.randomUUID().toString();
             
             String accessToken = generateToken(userId, email, role, TokenType.ACCESS, accessTokenTtlSeconds, accessTokenId);
-            String refreshToken = generateToken(userId, email, role, TokenType.REFRESH, refreshTokenTtlSeconds, refreshTokenId);
+            String refreshToken = "";
 
-            // Only store refresh token in Redis (whitelist approach)
-            // Access token is verified via JWE decryption + blocklist check
-            tokenStorageService.storeRefreshToken(refreshTokenId, userId, refreshToken);
+            // Only generate refresh token if user is activated
+            if (isActivated) {
+                refreshToken = generateToken(userId, email, role, TokenType.REFRESH, refreshTokenTtlSeconds, refreshTokenId);
 
+                // Only store refresh token in Redis (whitelist approach)
+                // Access token is verified via JWE decryption + blocklist check
+                tokenStorageService.storeRefreshToken(refreshTokenId, userId, refreshToken);
+            }
+
+
+            //Only generate long-lived refresh token for activated users
+            //Inactivated users will only have short-lived access tokens
             return TokenPairDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)

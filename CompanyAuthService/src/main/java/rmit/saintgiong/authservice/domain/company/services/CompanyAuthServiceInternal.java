@@ -93,7 +93,7 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
      */
     @Transactional
     @Override
-    public LoginServiceDto login(CompanyLoginRequestDto loginDto) {
+    public LoginServiceDto authenticateWithEmailAndPassword(CompanyLoginRequestDto loginDto) {
         // Find company by email
         CompanyAuthEntity companyAuth = companyAuthRepository.findByEmail(loginDto.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
@@ -107,7 +107,8 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
         TokenPairDto tokenPair = jweTokenService.generateTokenPair(
                 companyAuth.getCompanyId(),
                 companyAuth.getEmail(),
-                Role.COMPANY
+                Role.COMPANY,
+                companyAuth.isActivated()
         );
 
         log.info("Company logged in successfully: {}", companyAuth.getEmail());
@@ -137,7 +138,7 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
         
         // Find the company by ID
         CompanyAuthEntity companyAuth = companyAuthRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("companyId","","Company not found"));
         
         // Activate the company account
         companyAuth.setActivated(true);
@@ -156,7 +157,7 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
     public void resendOtp(UUID companyId) {
         // Find the company by ID
         CompanyAuthEntity companyAuth = companyAuthRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("companyId","","Company not found"));
         
         if (companyAuth.isActivated()) {
             throw new IllegalStateException("Account is already activated");
@@ -167,6 +168,7 @@ public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInte
         String otp = otpService.invalidateExistingAndGenerateNewOtp(companyId);
         
         // Send OTP email
+        //TODO: replace company email with company name
         emailService.sendOtpEmail(companyAuth.getEmail(), companyAuth.getEmail(), otp);
         
         log.info("OTP resent to company: {}", companyAuth.getEmail());

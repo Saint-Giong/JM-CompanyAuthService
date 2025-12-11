@@ -39,6 +39,8 @@ public class CompanyAuthController {
     private final JweTokenService jweTokenService;
 
     private static final String AUTH_COOKIE_NAME = "auth_token";
+    private static final String REFRESH_COOKIE_NAME = "refresh_token";
+
     private final CompanyAuthMapper companyAuthMapper;
 
     /**
@@ -81,7 +83,7 @@ public class CompanyAuthController {
             )
     })
     @PostMapping("/register")
-    public Callable<ResponseEntity<CompanyRegistrationResponseDto>> registerCompany(
+    public Callable<ResponseEntity<CompanyRegistrationResponseDto>> registerCompanyWithEmailAndPassword(
             @Valid @RequestBody CompanyRegistrationRequestDto registrationDto) {
         return () -> {
             CompanyRegistrationResponseDto response = internalCreateCompanyAuthInterface.registerCompany(registrationDto);
@@ -117,19 +119,27 @@ public class CompanyAuthController {
             )
     })
     @PostMapping("/login")
-    public Callable<ResponseEntity<CompanyLoginResponseDto>> login(
+    public Callable<ResponseEntity<CompanyLoginResponseDto>> loginWithEmailAndPassword(
             @Valid @RequestBody CompanyLoginRequestDto loginDto,
             HttpServletResponse response) {
         return () -> {
-            LoginServiceDto loginResponse = internalGetCompanyAuthInterface.login(loginDto);
+            LoginServiceDto loginResponse = internalGetCompanyAuthInterface.authenticateWithEmailAndPassword(loginDto);
 
-            // For activated accounts, set access token in HttpOnly cookie
+            // set a short-lived access token in HttpOnly cookie
             Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, loginResponse.getAccessToken());
             authCookie.setHttpOnly(true);
-            authCookie.setSecure(true);
+            authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
             authCookie.setPath("/");
             authCookie.setMaxAge(900);
             response.addCookie(authCookie);
+
+            // set refresh token in HttpOnly cookie
+            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, loginResponse.getRefreshToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(604800);
+            response.addCookie(refreshCookie);
 
             CompanyLoginResponseDto companyLoginResponseDto = companyAuthMapper.fromLoginServiceDto(loginResponse);
 

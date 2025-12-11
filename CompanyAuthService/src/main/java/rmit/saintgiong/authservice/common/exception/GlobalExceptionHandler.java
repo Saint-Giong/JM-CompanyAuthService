@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
         ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
                 .apiPath(request.getDescription(false).replace("uri=", ""))
                 .errorCode(HttpStatus.INTERNAL_SERVER_ERROR)
-                .message(String.valueOf(exception))
+                .message(exception.getMessage())
                 .timeStamp(LocalDateTime.now())
                 .build();
 
@@ -160,27 +160,6 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(errorResponseDto);
-    }
-
-    @ExceptionHandler({
-            OtpVerificationLockedException.class,
-            OtpResendCooldownException.class,
-            OtpHourlyLimitExceededException.class
-    })
-    public ResponseEntity<ErrorResponseDto> handleOtpRateLimitExceptions(
-            RuntimeException exception,
-            WebRequest request
-    ) {
-        ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
-                .apiPath(request.getDescription(false).replace("uri=", ""))
-                .errorCode(HttpStatus.TOO_MANY_REQUESTS)
-                .message(exception.getMessage())
-                .timeStamp(LocalDateTime.now())
-                .build();
-
-        return ResponseEntity
-                .status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(errorResponseDto);
     }
 

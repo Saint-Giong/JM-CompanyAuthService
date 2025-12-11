@@ -6,9 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import rmit.saintgiong.authservice.common.exception.OtpHourlyLimitExceededException;
-import rmit.saintgiong.authservice.common.exception.OtpResendCooldownException;
-import rmit.saintgiong.authservice.common.exception.OtpVerificationLockedException;
+import rmit.saintgiong.authservice.common.exception.otp.OtpHourlyLimitExceededException;
+import rmit.saintgiong.authservice.common.exception.otp.OtpResendCooldownException;
+import rmit.saintgiong.authservice.common.exception.otp.OtpVerificationLockedException;
 
 import java.security.SecureRandom;
 import java.time.Duration;

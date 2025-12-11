@@ -1,5 +1,6 @@
 package rmit.saintgiong.authservice.common.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -12,18 +13,19 @@ import jakarta.annotation.PostConstruct;
 
 // Service for sending emails using AWS SES (Simple Email Service).
 @Service
+@Slf4j
 public class EmailService {
 
-    @Value("${aws.accessKeyId}")
+    @Value("${AWS_ACCESS_KEY_ID}")
     private String accessKey;
 
-    @Value("${aws.secretAccessKey}")
+    @Value("${AWS_SECRET_ACCESS_KEY}")
     private String secretKey;
 
-    @Value("${aws.region}")
+    @Value("${AWS_REGION}")
     private String region;
 
-    @Value("${aws.ses.sender}")
+    @Value("${AWS_SES_SENDER}")
     private String senderEmail;
 
     private SesV2Client sesClient;
@@ -61,9 +63,9 @@ public class EmailService {
         // Send
         try {
             sesClient.sendEmail(request);
-            System.out.println("OTP email sent to " + recipientEmail);
+            log.info("OTP email sent to {}", recipientEmail);
         } catch (SesV2Exception e) {
-            System.err.println("AWS SES Error: " + e.awsErrorDetails().errorMessage());
+            log.error("AWS SES Error: {}", e.awsErrorDetails().errorMessage());
             throw e;
         }
     }

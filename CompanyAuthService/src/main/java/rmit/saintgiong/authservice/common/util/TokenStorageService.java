@@ -30,9 +30,6 @@ public class TokenStorageService {
     @Value("${jwe.refresh-token-ttl-seconds:604800}")
     private long refreshTokenTtlSeconds;
 
-    @Value("${jwe.activation-token-ttl-seconds:86400}")
-    private long activationTokenTtlSeconds;
-
     // Access Token Blocklist
 
     /**

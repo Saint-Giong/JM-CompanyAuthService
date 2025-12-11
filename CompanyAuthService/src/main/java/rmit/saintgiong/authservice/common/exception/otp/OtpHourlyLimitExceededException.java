@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.exception;
+package rmit.saintgiong.authservice.common.exception.otp;
 
 public class OtpHourlyLimitExceededException extends RuntimeException {
 
