@@ -38,7 +38,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .requestMatchers("/register").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 );
 
         return http.build();
