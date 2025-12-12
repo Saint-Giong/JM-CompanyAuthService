@@ -26,7 +26,7 @@ public class SecurityConfig {
                 .cors(
                         cors -> cors
                                 .configurationSource(
-                                        (CorsConfigurationSource) corsConfigurationSource()
+                                        corsConfigurationSource()
                                 )
                 )
                 .authorizeHttpRequests(auth -> auth
