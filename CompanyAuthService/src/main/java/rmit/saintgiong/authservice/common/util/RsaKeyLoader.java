@@ -13,7 +13,8 @@ import java.util.Base64;
 public class RsaKeyLoader {
 
     /**
-     * Loads an RSA public key from PEM-encoded string.
+     * Loads an RSA public key from the {@code PUBLIC_KEY_B64} environment variable.
+     * The environment variable should contain a Base64-encoded public key.
      *
      * @return The RSA public key
      * @throws Exception If key parsing fails
