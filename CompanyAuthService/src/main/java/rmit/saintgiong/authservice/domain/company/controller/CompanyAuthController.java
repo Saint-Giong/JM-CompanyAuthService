@@ -28,7 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 
 @RestController
-@RequestMapping("/api/v1/sgjm/auth") //TODO: keep for testing purpose, will be removed when deployed with API Gateway
 @AllArgsConstructor
 @Tag(name = "Company Authentication", description = "APIs for company registration, authentication, and account management")
 public class CompanyAuthController {
@@ -49,7 +48,7 @@ public class CompanyAuthController {
      * @param registrationDto the company registration details containing email, password,
      *                        and other required information
      * @return a {@link Callable} that returns a {@link ResponseEntity} containing
-     *         the registration response with company ID, email, and success status
+     * the registration response with company ID, email, and success status
      */
     @Operation(
             summary = "Register a new company",
@@ -87,13 +86,15 @@ public class CompanyAuthController {
             @Valid @RequestBody CompanyRegistrationRequestDto registrationDto) {
         return () -> {
             CompanyRegistrationResponseDto response = internalCreateCompanyAuthInterface.registerCompany(registrationDto);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(response);
         };
     }
 
     /**
      * Authenticates a company and returns tokens if activated.
-     * If account is not activated, sends OTP and sets a temporary cookie.
+     * If an account is not activated, sends OTP and sets a temporary cookie.
      */
     @Operation(
             summary = "Company login",
@@ -133,7 +134,7 @@ public class CompanyAuthController {
             authCookie.setMaxAge(900);
             response.addCookie(authCookie);
 
-            // set refresh token in HttpOnly cookie
+            // set a refresh token in HttpOnly cookie
             Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, loginResponse.getRefreshToken());
             refreshCookie.setHttpOnly(true);
             refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
@@ -143,7 +144,9 @@ public class CompanyAuthController {
 
             CompanyLoginResponseDto companyLoginResponseDto = companyAuthMapper.fromLoginServiceDto(loginResponse);
 
-            return ResponseEntity.status(HttpStatus.OK).body(companyLoginResponseDto);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(companyLoginResponseDto);
         };
     }
 
@@ -194,10 +197,12 @@ public class CompanyAuthController {
             // Verify OTP and activate account
             internalUpdateCompanyAuthInterface.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
 
-            return ResponseEntity.ok(OtpVerificationResponseDto.builder()
-                    .success(true)
-                    .message("Account activated successfully. Please login to continue.")
-                    .build());
+            return ResponseEntity.ok(
+                    OtpVerificationResponseDto.builder()
+                            .success(true)
+                            .message("Account activated successfully. Please login to continue.")
+                            .build()
+            );
         };
     }
 
@@ -246,10 +251,12 @@ public class CompanyAuthController {
             // Resend OTP
             internalUpdateCompanyAuthInterface.resendOtp(companyId);
 
-            return ResponseEntity.ok(OtpVerificationResponseDto.builder()
-                    .success(true)
-                    .message("A new OTP has been sent to your email.")
-                    .build());
+            return ResponseEntity.ok(
+                    OtpVerificationResponseDto.builder()
+                            .success(true)
+                            .message("A new OTP has been sent to your email.")
+                            .build()
+            );
         };
     }
 

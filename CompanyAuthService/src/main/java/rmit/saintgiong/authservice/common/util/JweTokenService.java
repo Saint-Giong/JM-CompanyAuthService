@@ -5,19 +5,16 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
-import rmit.saintgiong.authservice.common.auth.Role;
-import rmit.saintgiong.authservice.common.auth.TokenType;
+import rmit.saintgiong.authservice.common.auth.type.Role;
+import rmit.saintgiong.authservice.common.auth.type.TokenType;
 import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
 import rmit.saintgiong.authservice.common.dto.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.TokenExpiredException;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 
-import java.nio.charset.StandardCharsets;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
@@ -61,16 +58,9 @@ public class JweTokenService {
 
     @PostConstruct
     public void init() throws Exception {
-        // Load keys from file paths (supports classpath: and file: prefixes)
-        Resource publicKeyResource = resourceLoader.getResource(publicKeyPath);
-        Resource privateKeyResource = resourceLoader.getResource(privateKeyPath);
-        
-        String publicKeyPem = new String(publicKeyResource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        String privateKeyPem = new String(privateKeyResource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        
-        this.publicKey = keyLoader.loadPublicKey(publicKeyPem);
-        this.privateKey = keyLoader.loadPrivateKey(privateKeyPem);
-        
+        this.publicKey = keyLoader.loadPublicKey();
+        this.privateKey = keyLoader.loadPrivateKey();
+
         log.info("JWE Token Service initialized with issuer: {}", issuer);
         log.info("Access token TTL: {} seconds, Refresh token TTL: {} seconds",
                 accessTokenTtlSeconds, refreshTokenTtlSeconds);
@@ -91,7 +81,7 @@ public class JweTokenService {
 
             String accessTokenId = UUID.randomUUID().toString();
             String refreshTokenId = UUID.randomUUID().toString();
-            
+
             String accessToken = generateToken(userId, email, role, TokenType.ACCESS, accessTokenTtlSeconds, accessTokenId);
             String refreshToken = "";
 
@@ -146,12 +136,12 @@ public class JweTokenService {
         try {
             String newAccessTokenId = UUID.randomUUID().toString();
             String newRefreshTokenId = UUID.randomUUID().toString();
-            
+
             String newAccessToken = generateToken(
-                    claims.getSub(), 
-                    claims.getEmail(), 
-                    claims.getRole(), 
-                    TokenType.ACCESS, 
+                    claims.getSub(),
+                    claims.getEmail(),
+                    claims.getRole(),
+                    TokenType.ACCESS,
                     accessTokenTtlSeconds,
                     newAccessTokenId
             );
@@ -207,9 +197,9 @@ public class JweTokenService {
     }
 
     // Generates a single JWE token with the specified parameters.
-    private String generateToken(UUID userId, String email, Role role, TokenType tokenType, long ttlSeconds, String tokenId) 
+    private String generateToken(UUID userId, String email, Role role, TokenType tokenType, long ttlSeconds, String tokenId)
             throws JOSEException {
-        
+
         long now = Instant.now().getEpochSecond();
         long exp = now + ttlSeconds;
 
