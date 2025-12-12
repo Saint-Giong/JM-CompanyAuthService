@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CompanyAuthServiceInternal Unit Tests")
-class CompanyAuthServiceInternalTest {
+class CompanyAuthServiceTest {
 
     @Mock
     private CompanyAuthMapper companyAuthMapper;
@@ -57,7 +57,7 @@ class CompanyAuthServiceInternalTest {
     private JweTokenService jweTokenService;
 
     @InjectMocks
-    private CompanyAuthServiceInternal companyAuthServiceInternal;
+    private CompanyAuthService companyAuthService;
 
     // Test data
     private CompanyRegistrationRequestDto validRegistrationDto;
@@ -123,7 +123,7 @@ class CompanyAuthServiceInternalTest {
             doNothing().when(emailService).sendOtpEmail(anyString(), anyString(), anyString());
 
             // Act
-            CompanyRegistrationResponseDto response = companyAuthServiceInternal.registerCompany(validRegistrationDto);
+            CompanyRegistrationResponseDto response = companyAuthService.registerCompany(validRegistrationDto);
 
             // Assert
             assertThat(response).isNotNull();
@@ -158,7 +158,7 @@ class CompanyAuthServiceInternalTest {
             doNothing().when(emailService).sendOtpEmail(anyString(), anyString(), anyString());
 
             // Act
-            companyAuthServiceInternal.registerCompany(validRegistrationDto);
+            companyAuthService.registerCompany(validRegistrationDto);
 
             // Assert
             verify(passwordEncoder, times(1)).encode(TEST_PASSWORD);
@@ -183,7 +183,7 @@ class CompanyAuthServiceInternalTest {
             when(companyAuthRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(existingEntity));
 
             // Act & Assert
-            assertThatThrownBy(() -> companyAuthServiceInternal.registerCompany(validRegistrationDto))
+            assertThatThrownBy(() -> companyAuthService.registerCompany(validRegistrationDto))
                     .isInstanceOf(CompanyAccountAlreadyExisted.class)
                     .hasMessage("Email already registered");
         }

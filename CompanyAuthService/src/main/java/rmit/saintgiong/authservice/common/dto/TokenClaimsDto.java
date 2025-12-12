@@ -4,8 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import rmit.saintgiong.authservice.common.auth.Role;
-import rmit.saintgiong.authservice.common.auth.TokenType;
+import rmit.saintgiong.authservice.common.auth.type.Role;
+import rmit.saintgiong.authservice.common.auth.type.TokenType;
 
 import java.util.UUID;
 

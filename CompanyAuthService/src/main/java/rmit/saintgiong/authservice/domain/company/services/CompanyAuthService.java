@@ -11,7 +11,7 @@ import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
-import rmit.saintgiong.authservice.common.auth.Role;
+import rmit.saintgiong.authservice.common.auth.type.Role;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authservice.common.dto.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
@@ -32,7 +32,7 @@ import java.util.UUID;
 @Service
 @AllArgsConstructor
 @Slf4j
-public class CompanyAuthServiceInternal implements InternalCreateCompanyAuthInterface , InternalGetCompanyAuthInterface, InternalUpdateCompanyAuthInterface {
+public class CompanyAuthService implements InternalCreateCompanyAuthInterface , InternalGetCompanyAuthInterface, InternalUpdateCompanyAuthInterface {
 
     private final CompanyAuthMapper companyAuthMapper;
     private final CompanyAuthRepository companyAuthRepository;
