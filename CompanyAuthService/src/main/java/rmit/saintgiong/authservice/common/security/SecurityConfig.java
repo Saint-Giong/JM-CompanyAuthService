@@ -15,6 +15,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/api-docs/**",
+                    "/api-docs.yaml",
+                    "/v3/api-docs/**"
+                ).permitAll()
                 .requestMatchers("/api/v1/sgjm/auth/register").permitAll()  // Allow public access to registration
                 .anyRequest().permitAll()
             )

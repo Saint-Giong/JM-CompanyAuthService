@@ -1,0 +1,23 @@
+spring:
+  cloud:
+    discovery:
+      enabled: false
+  main:
+    allow-bean-definition-overriding: true
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+# Disable Kafka for tests
+spring.kafka:
+  bootstrap-servers: localhost:9092
+  consumer:
+    auto-offset-reset: earliest
+  
+spring.cloud.stream:
+  kafka:
+    binder:
+      autoCreateTopics: false
