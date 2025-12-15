@@ -13,6 +13,7 @@ import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.auth.type.Role;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
+import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
 import rmit.saintgiong.authservice.common.dto.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.InvalidCredentialsException;
@@ -172,6 +173,37 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
         emailService.sendOtpEmail(companyAuth.getEmail(), companyAuth.getEmail(), otp);
         
         log.info("OTP resent to company: {}", companyAuth.getEmail());
+    }
+
+    /**
+     * Validates access token and returns the company ID.
+     *
+     * @param accessToken the access token to validate
+     * @return the company ID extracted from the token
+     */
+    @Override
+    public UUID validateAccessTokenAndGetCompanyId(String accessToken) {
+        TokenClaimsDto claims = jweTokenService.validateAccessToken(accessToken);
+        return claims.getSub();
+    }
+
+    /**
+     * Refreshes the token pair using a valid refresh token.
+     *
+     * @param refreshToken the refresh token
+     * @return LoginServiceDto containing new access and refresh tokens
+     */
+    @Override
+    public LoginServiceDto refreshTokenPair(String refreshToken) {
+        TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
+        
+        return LoginServiceDto.builder()
+                .success(true)
+                .isActivated(true)
+                .message("Token refreshed successfully.")
+                .accessToken(tokenPair.getAccessToken())
+                .refreshToken(tokenPair.getRefreshToken())
+                .build();
     }
 
 }

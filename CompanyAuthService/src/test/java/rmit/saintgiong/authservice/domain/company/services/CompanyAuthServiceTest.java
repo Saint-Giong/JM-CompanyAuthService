@@ -11,7 +11,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
+import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
+import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
+import rmit.saintgiong.authservice.common.dto.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 import rmit.saintgiong.authservice.common.util.EmailService;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.common.util.OtpService;
@@ -186,6 +190,96 @@ class CompanyAuthServiceTest {
             assertThatThrownBy(() -> companyAuthService.registerCompany(validRegistrationDto))
                     .isInstanceOf(CompanyAccountAlreadyExisted.class)
                     .hasMessage("Email already registered");
+        }
+    }
+
+    //   TOKEN VALIDATION TESTS  
+
+    @Nested
+    @DisplayName("Token Validation Tests")
+    class TokenValidationTests {
+
+        @Test
+        @DisplayName("Should validate access token and return company ID")
+        void validateAccessTokenAndGetCompanyId_ValidToken_ReturnsCompanyId() {
+            // Arrange
+            String accessToken = "valid.access.token";
+            TokenClaimsDto claims = TokenClaimsDto.builder()
+                    .sub(testCompanyId)
+                    .email(TEST_EMAIL)
+                    .build();
+            when(jweTokenService.validateAccessToken(accessToken)).thenReturn(claims);
+
+            // Act
+            UUID result = companyAuthService.validateAccessTokenAndGetCompanyId(accessToken);
+
+            // Assert
+            assertThat(result).isEqualTo(testCompanyId);
+            verify(jweTokenService, times(1)).validateAccessToken(accessToken);
+        }
+
+        @Test
+        @DisplayName("Should throw InvalidTokenException when token is invalid")
+        void validateAccessTokenAndGetCompanyId_InvalidToken_ThrowsException() {
+            // Arrange
+            String invalidToken = "invalid.token";
+            when(jweTokenService.validateAccessToken(invalidToken))
+                    .thenThrow(new InvalidTokenException("Invalid token"));
+
+            // Act & Assert
+            assertThatThrownBy(() -> companyAuthService.validateAccessTokenAndGetCompanyId(invalidToken))
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessage("Invalid token");
+        }
+    }
+
+    //   REFRESH TOKEN TESTS  
+
+    @Nested
+    @DisplayName("Refresh Token Tests")
+    class RefreshTokenTests {
+
+        @Test
+        @DisplayName("Should refresh token pair successfully")
+        void refreshTokenPair_ValidRefreshToken_ReturnsNewTokenPair() {
+            // Arrange
+            String refreshToken = "valid.refresh.token";
+            String newAccessToken = "new.access.token";
+            String newRefreshToken = "new.refresh.token";
+            
+            TokenPairDto tokenPair = TokenPairDto.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .accessTokenExpiresIn(900)
+                    .refreshTokenExpiresIn(604800)
+                    .build();
+            when(jweTokenService.refreshAccessToken(refreshToken)).thenReturn(tokenPair);
+
+            // Act
+            LoginServiceDto result = companyAuthService.refreshTokenPair(refreshToken);
+
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.isActivated()).isTrue();
+            assertThat(result.getMessage()).isEqualTo("Token refreshed successfully.");
+            assertThat(result.getAccessToken()).isEqualTo(newAccessToken);
+            assertThat(result.getRefreshToken()).isEqualTo(newRefreshToken);
+            verify(jweTokenService, times(1)).refreshAccessToken(refreshToken);
+        }
+
+        @Test
+        @DisplayName("Should throw exception when refresh token is invalid")
+        void refreshTokenPair_InvalidRefreshToken_ThrowsException() {
+            // Arrange
+            String invalidRefreshToken = "invalid.refresh.token";
+            when(jweTokenService.refreshAccessToken(invalidRefreshToken))
+                    .thenThrow(new InvalidTokenException("Invalid refresh token"));
+
+            // Act & Assert
+            assertThatThrownBy(() -> companyAuthService.refreshTokenPair(invalidRefreshToken))
+                    .isInstanceOf(InvalidTokenException.class)
+                    .hasMessage("Invalid refresh token");
         }
     }
 

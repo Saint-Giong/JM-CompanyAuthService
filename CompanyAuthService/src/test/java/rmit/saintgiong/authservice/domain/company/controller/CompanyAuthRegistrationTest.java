@@ -110,7 +110,7 @@ class CompanyAuthRegistrationTest {
                     .thenReturn(mockResponse);
 
             // Act & Assert
-            MvcResult result = mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            MvcResult result = mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(request().asyncStarted())
@@ -139,7 +139,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_EmptyCompanyName_Fail() throws Exception {
             validRegistrationDto.setCompanyName("");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -162,7 +162,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_EmptyEmail_Fail() throws Exception {
             validRegistrationDto.setEmail("");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -186,7 +186,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_InvalidEmailFormat_Fail(String invalidEmail) throws Exception {
             validRegistrationDto.setEmail(invalidEmail);
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -208,7 +208,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_EmptyPassword_Fail() throws Exception {
             validRegistrationDto.setPassword("");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -222,7 +222,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_ShortPassword_Fail() throws Exception {
             validRegistrationDto.setPassword("Pass1!");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -236,7 +236,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_NoUppercasePassword_Fail() throws Exception {
             validRegistrationDto.setPassword("password123!");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -250,7 +250,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_NoNumberPassword_Fail() throws Exception {
             validRegistrationDto.setPassword("Password!");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -264,7 +264,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_NoSpecialCharPassword_Fail() throws Exception {
             validRegistrationDto.setPassword("Password123");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -287,7 +287,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_EmptyCountry_Fail() throws Exception {
             validRegistrationDto.setCountry("");
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -317,7 +317,7 @@ class CompanyAuthRegistrationTest {
         void testRegisterCompany_InvalidPhoneFormat_Fail(String invalidPhone) throws Exception {
             validRegistrationDto.setPhoneNumber(invalidPhone);
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(status().isBadRequest())
@@ -340,7 +340,7 @@ class CompanyAuthRegistrationTest {
             when(companyAuthService.registerCompany(any(CompanyRegistrationRequestDto.class)))
                     .thenThrow(new CompanyAccountAlreadyExisted("Email already registered"));
 
-            MvcResult result = mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            MvcResult result = mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRegistrationDto)))
                     .andExpect(request().asyncStarted())
@@ -373,7 +373,7 @@ class CompanyAuthRegistrationTest {
                     ""
             );
 
-            mockMvc.perform(post("/api/v1/sgjm/auth/register")
+            mockMvc.perform(post("/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(invalidDto)))
                     .andExpect(status().isBadRequest())

@@ -19,10 +19,7 @@ import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.dto.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
-import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
-import rmit.saintgiong.authservice.common.dto.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 
 import java.util.UUID;
@@ -36,7 +33,6 @@ public class CompanyAuthController {
     private final InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
     private final InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
     private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
-    private final JweTokenService jweTokenService;
 
     private static final String AUTH_COOKIE_NAME = "auth_token";
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
@@ -191,9 +187,8 @@ public class CompanyAuthController {
                 throw new InvalidTokenException("Authentication token not found. Please login first.");
             }
 
-            // Validate and extract company ID from the token
-            TokenClaimsDto claims = jweTokenService.validateAccessToken(authToken);
-            UUID companyId = claims.getSub();
+            // Validate and extract company ID from the token via service layer
+            UUID companyId = internalGetCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
 
             // Verify OTP and activate account
             internalUpdateCompanyAuthInterface.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
@@ -245,9 +240,8 @@ public class CompanyAuthController {
                 throw new InvalidTokenException("Authentication token not found. Please login first.");
             }
 
-            // Validate and extract company ID from the token
-            TokenClaimsDto claims = jweTokenService.validateAccessToken(authToken);
-            UUID companyId = claims.getSub();
+            // Validate and extract company ID from the token via service layer
+            UUID companyId = internalGetCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
 
             // Resend OTP
             internalUpdateCompanyAuthInterface.resendOtp(companyId);
@@ -300,10 +294,10 @@ public class CompanyAuthController {
             }
 
             // Refresh the token pair (includes reuse detection)
-            TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
+            LoginServiceDto tokenResponse = internalGetCompanyAuthInterface.refreshTokenPair(refreshToken);
 
             // Set new access token in HttpOnly cookie
-            Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenPair.getAccessToken());
+            Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenResponse.getAccessToken());
             authCookie.setHttpOnly(true);
             authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
             authCookie.setPath("/");
@@ -311,7 +305,7 @@ public class CompanyAuthController {
             response.addCookie(authCookie);
 
             // Set new refresh token in HttpOnly cookie (token rotation)
-            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenPair.getRefreshToken());
+            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenResponse.getRefreshToken());
             refreshCookie.setHttpOnly(true);
             refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
             refreshCookie.setPath("/");
