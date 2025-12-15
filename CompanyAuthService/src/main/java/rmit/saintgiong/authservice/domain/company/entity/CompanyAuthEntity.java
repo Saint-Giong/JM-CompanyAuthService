@@ -32,8 +32,8 @@ public class CompanyAuthEntity {
     @Column(name = "hashed_password")
     private String hashedPassword;
 
-    @Column(name = "sso_provider")
-    private String ssoProvider;
+    @Column(name = "sso_token")
+    private String ssoToken;
 
     @Column(name = "is_activated")
     private boolean isActivated;
