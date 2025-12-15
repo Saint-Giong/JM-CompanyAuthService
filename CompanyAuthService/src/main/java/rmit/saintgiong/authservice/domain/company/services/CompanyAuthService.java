@@ -25,6 +25,7 @@ import rmit.saintgiong.authservice.common.util.TokenStorageService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
+import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -173,5 +174,7 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
         
         log.info("OTP resent to company: {}", companyAuth.getEmail());
     }
+
+
 
 }

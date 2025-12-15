@@ -12,18 +12,22 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import rmit.saintgiong.authapi.internal.dto.*;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.google_oauth.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authservice.common.dto.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
+import rmit.saintgiong.authservice.common.dto.GenericResponseDto;
 import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 
+import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
@@ -35,6 +39,8 @@ public class CompanyAuthController {
     private final InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
     private final InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
     private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
+    private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;
+
     private final JweTokenService jweTokenService;
 
     private static final String AUTH_COOKIE_NAME = "auth_token";
@@ -260,9 +266,35 @@ public class CompanyAuthController {
         };
     }
 
+    @GetMapping("/google-register-url")
+    public ResponseEntity<String> buildGoogleAuthRedirectUrl() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(internalGoogleOAuthInterface.buildGoogleAuthUrl());
+    }
+
+//    @GetMapping("/google-callback-code")
+//    public ResponseEntity<GenericResponseDto<?>> handleGoogleCallback (
+//            HttpServletResponse response,
+//            Authentication authentication,
+//            @RequestParam("auth_code") String authorizationCode,
+//            @RequestParam(value = "state", required = false) String state
+//    ) throws IOException {
+//
+//    }
+
     @GetMapping("/hello")
     public String hello() {
         return "hello world";
     }
 
+    @GetMapping("/error")
+    public String error() {
+        return "error";
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboard() {
+        return "this is a dashboard";
+    }
 }

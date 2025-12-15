@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.services;
+package rmit.saintgiong.authservice.domain.company.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-interface CompanyAuthRepository extends JpaRepository<CompanyAuthEntity, UUID> {
+public interface CompanyAuthRepository extends JpaRepository<CompanyAuthEntity, UUID> {
     Optional<CompanyAuthEntity> findByEmail(String email);
+    Optional<CompanyAuthEntity> findByCompanyId(String id);
 }

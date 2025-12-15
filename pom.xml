@@ -48,6 +48,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>devision.saintgiong</groupId>
             <artifactId>sg-shared-dto-package</artifactId>
             <version>0.0.1-SNAPSHOT-09273510122025</version>
