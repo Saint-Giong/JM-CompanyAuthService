@@ -14,6 +14,7 @@ import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
 import rmit.saintgiong.authservice.common.dto.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.TokenExpiredException;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
+import rmit.saintgiong.authservice.common.exception.TokenReuseException;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -114,6 +115,8 @@ public class JweTokenService {
     /**
      * Refreshes an access token using a valid refresh token.
      * Old refresh token is revoked and new tokens are generated.
+     * Implements token reuse detection - if a previously used token is detected,
+     * all user sessions are invalidated as a security measure.
      *
      * @param refreshToken The refresh token
      * @return New TokenPairDto with fresh access token and rotated refresh token
@@ -126,8 +129,18 @@ public class JweTokenService {
             throw new InvalidTokenException("Invalid token type: expected REFRESH token");
         }
 
-        // Verify token exists in Redis (not revoked)
         String oldRefreshTokenId = claims.getJti();
+        
+        // Check for token reuse (security measure)
+        if (tokenStorageService.isRefreshTokenUsed(oldRefreshTokenId)) {
+            // Token was previously used - possible token theft!
+            // Revoke all user tokens as a security measure
+            log.warn("Refresh token reuse detected for user {}. Revoking all sessions.", claims.getSub());
+            tokenStorageService.revokeAllUserRefreshTokens(claims.getSub());
+            throw new TokenReuseException("Refresh token has already been used. All sessions have been invalidated for security.");
+        }
+
+        // Verify token exists in Redis (not revoked)
         if (!tokenStorageService.isRefreshTokenValid(oldRefreshTokenId)) {
             throw new InvalidTokenException("Refresh token has been revoked or expired");
         }

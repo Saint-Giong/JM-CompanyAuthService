@@ -20,6 +20,7 @@ import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterfa
 import rmit.saintgiong.authservice.common.dto.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
+import rmit.saintgiong.authservice.common.dto.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
@@ -255,6 +256,72 @@ public class CompanyAuthController {
                     OtpVerificationResponseDto.builder()
                             .success(true)
                             .message("A new OTP has been sent to your email.")
+                            .build()
+            );
+        };
+    }
+
+    /**
+     * Refreshes access token using a valid refresh token from cookie.
+     * Implements token rotation - old refresh token is invalidated and a new one is issued.
+     * Detects and prevents token reuse attacks.
+     */
+    @Operation(
+            summary = "Refresh access token",
+            description = "Refreshes the access token using a valid refresh token from the cookie. " +
+                    "The old refresh token is invalidated and a new token pair is issued (token rotation). " +
+                    "If token reuse is detected, all user sessions are invalidated for security."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Token refreshed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = RefreshTokenResponseDto.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Invalid, expired, or reused refresh token",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    })
+    @PostMapping("/refresh-token")
+    public Callable<ResponseEntity<RefreshTokenResponseDto>> refreshToken(
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+            HttpServletResponse response) {
+        return () -> {
+            if (refreshToken == null || refreshToken.isEmpty()) {
+                throw new InvalidTokenException("Refresh token not found. Please login first.");
+            }
+
+            // Refresh the token pair (includes reuse detection)
+            TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
+
+            // Set new access token in HttpOnly cookie
+            Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenPair.getAccessToken());
+            authCookie.setHttpOnly(true);
+            authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+            authCookie.setPath("/");
+            authCookie.setMaxAge(900);
+            response.addCookie(authCookie);
+
+            // Set new refresh token in HttpOnly cookie (token rotation)
+            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenPair.getRefreshToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(604800);
+            response.addCookie(refreshCookie);
+
+            return ResponseEntity.ok(
+                    RefreshTokenResponseDto.builder()
+                            .success(true)
+                            .message("Token refreshed successfully.")
                             .build()
             );
         };

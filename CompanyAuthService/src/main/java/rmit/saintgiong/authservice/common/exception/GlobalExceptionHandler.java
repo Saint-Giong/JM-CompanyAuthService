@@ -1,5 +1,7 @@
 package rmit.saintgiong.authservice.common.exception;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,9 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String AUTH_COOKIE_NAME = "auth_token";
+    private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGlobalException(
@@ -160,6 +165,42 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponseDto);
+    }
+
+    @ExceptionHandler(TokenReuseException.class)
+    public ResponseEntity<ErrorResponseDto> handleTokenReuseException(
+            TokenReuseException exception,
+            WebRequest request,
+            HttpServletResponse response
+    ) {
+        log.warn("Token reuse detected: {}", exception.getMessage());
+
+        // Clear auth_token cookie
+        Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, null);
+        authCookie.setHttpOnly(true);
+        authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+        authCookie.setPath("/");
+        authCookie.setMaxAge(0);
+        response.addCookie(authCookie);
+
+        // Clear refresh_token cookie
+        Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, null);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0);
+        response.addCookie(refreshCookie);
+
+        ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
+                .apiPath(request.getDescription(false).replace("uri=", ""))
+                .errorCode(HttpStatus.UNAUTHORIZED)
+                .message(exception.getMessage())
+                .timeStamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
                 .body(errorResponseDto);
     }
 
