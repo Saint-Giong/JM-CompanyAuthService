@@ -1,0 +1,9 @@
+package rmit.saintgiong.authservice.common.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+
+@Configuration
+@PropertySource(value = "file:./CompanyAuthService/.auth.env", ignoreResourceNotFound = false)
+public class EnvPropertyConfig {
+}
