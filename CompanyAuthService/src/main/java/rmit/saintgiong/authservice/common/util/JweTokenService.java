@@ -49,12 +49,10 @@ public class JweTokenService {
     private RSAPrivateKey privateKey;
 
     private final RsaKeyLoader keyLoader;
-    private final ResourceLoader resourceLoader;
     private final TokenStorageService tokenStorageService;
 
-    public JweTokenService(RsaKeyLoader keyLoader, ResourceLoader resourceLoader, TokenStorageService tokenStorageService) {
+    public JweTokenService(RsaKeyLoader keyLoader, TokenStorageService tokenStorageService) {
         this.keyLoader = keyLoader;
-        this.resourceLoader = resourceLoader;
         this.tokenStorageService = tokenStorageService;
     }
 
@@ -245,7 +243,28 @@ public class JweTokenService {
             if (googleIdString == null) {
                 throw new InvalidTokenException("Google ID not found in token.");
             }
+
             return googleIdString;
+
+        } catch (TokenExpiredException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Token validation failed", e);
+            throw new InvalidTokenException("Invalid or malformed token");
+        }
+    }
+
+    public String getEmailFromJweString(String jweString) {
+        try {
+            JWEObject jweObject = validateAndGetDecryptedJweObject(jweString, TokenType.TEMP);
+            Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
+
+            String emailString = tokenPayload.get("email") != null ? tokenPayload.get("email").toString() : null;
+            if (emailString == null) {
+                throw new InvalidTokenException("Google ID not found in token.");
+            }
+
+            return emailString;
 
         } catch (TokenExpiredException e) {
             throw e;
@@ -336,7 +355,7 @@ public class JweTokenService {
 
         List<Role> roleList = Arrays.asList(Role.values());
         String role = tokenPayload.get("role") != null ? tokenPayload.get("role").toString() : null;
-        if (role == null || roleList.stream().anyMatch(r -> r.name().equals(role))) {
+        if (role == null || roleList.stream().noneMatch(r -> r.name().equals(role))) {
             throw new InvalidTokenException(String.format("Invalid token role: %s, expected COMPANY", role));
         }
 

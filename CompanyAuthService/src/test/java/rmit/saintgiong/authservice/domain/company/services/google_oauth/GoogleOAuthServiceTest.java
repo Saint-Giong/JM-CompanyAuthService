@@ -1,3 +1,4 @@
+// java
 package rmit.saintgiong.authservice.domain.company.services.google_oauth;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -17,8 +18,11 @@ import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -111,6 +115,36 @@ class GoogleOAuthServiceTest {
         assertNull(result.getName());
     }
 
+    @Test
+    void buildGoogleAuthUrl_containsAllRequiredParametersAndEncoding() throws Exception {
+        // Arrange
+        ReflectionTestUtils.setField(googleOAuthService, "clientId", "test-client-id");
+        ReflectionTestUtils.setField(googleOAuthService, "redirectLoginUri", "http://localhost:8080/callback");
+
+        // Act
+        String url = googleOAuthService.buildGoogleAuthUrl();
+
+        // Assert: basic URL parts
+        URI uri = new URI(url);
+        assertEquals("https", uri.getScheme());
+        assertEquals("accounts.google.com", uri.getHost());
+        assertEquals("/o/oauth2/v2/auth", uri.getPath());
+        assertNotNull(uri.getQuery());
+
+        // Parse and decode query parameters
+        Map<String, String> params = Arrays.stream(uri.getQuery().split("&"))
+                .map(s -> s.split("=", 2))
+                .collect(Collectors.toMap(a -> a[0], a -> URLDecoder.decode(a[1], StandardCharsets.UTF_8)));
+
+        assertEquals("test-client-id", params.get("client_id"));
+        assertEquals("http://localhost:8080/callback", params.get("redirect_uri"));
+        assertEquals("code", params.get("response_type"));
+        assertEquals("openid email profile", params.get("scope"));
+        assertEquals("offline", params.get("access_type"));
+        assertEquals("consent", params.get("prompt"));
+        assertEquals("login", params.get("state"));
+    }
+
     private GoogleIdToken.Payload payload(String sub, String email, boolean verified, String name) {
         GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
         payload.setSubject(sub);
@@ -120,4 +154,3 @@ class GoogleOAuthServiceTest {
         return payload;
     }
 }
-

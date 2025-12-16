@@ -90,9 +90,15 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
         CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(requestDto);
 
         String googleId = jweTokenService.getGoogleIdFromJweToken(tempToken);
-        if (googleId == null) {
-            throw new InvalidTokenException("Authenticating via Google requires googleId in TEMP_COOKIE.");
+        String emailFromToken = jweTokenService.getGoogleIdFromJweToken(tempToken);
+        if (googleId == null || emailFromToken == null) {
+            throw new InvalidTokenException("Missing either googleId or email in TEMP_COOKIE.");
         }
+
+        if (!emailFromToken.equals(requestDto.getEmail())) {
+            throw new InvalidTokenException("Email in TEMP_COOKIE does not match the registration email.");
+        }
+
         companyAuth.setSsoToken(googleId);
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
@@ -112,7 +118,7 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
 
     /**
      * Authenticates a company with email and password.
-     * If account is not activated, generates and sends a new OTP.
+     * If an account is not activated, it generates and sends a new OTP.
      *
      * @param loginDto The login credentials
      * @return CompanyLoginResponseDto with an authentication result and tokens if activated

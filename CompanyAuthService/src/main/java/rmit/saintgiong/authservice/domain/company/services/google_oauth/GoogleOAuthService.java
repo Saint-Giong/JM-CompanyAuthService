@@ -46,8 +46,8 @@ public class GoogleOAuthService implements InternalGoogleOAuthInterface {
     private final InternalCreateCompanyAuthInterface createCompanyAuthInterface;
     private final JweTokenService jweTokenService;
 
-    private static final GsonFactory gsonFactory = new GsonFactory().getDefaultInstance();
-    private static final NetHttpTransport netHttpTransport = new NetHttpTransport();
+    private static final GsonFactory GSON_FACTORY = new GsonFactory().getDefaultInstance();
+    private static final NetHttpTransport NET_HTTP_TRANSPORT = new NetHttpTransport();
 
     @Autowired
     public GoogleOAuthService(CompanyAuthRepository companyAuthRepository, InternalCreateCompanyAuthInterface createCompanyAuthInterface, JweTokenService jweTokenService) {
@@ -76,31 +76,30 @@ public class GoogleOAuthService implements InternalGoogleOAuthInterface {
             return new GoogleOAuthResponseDto(null, registerToken, registerTokenTtlSeconds, googleEmail, googleName);
         }
 
-        CompanyAuthEntity existingCompany = savedCompany.get();
         // Has email but no sso --> Duplicated
-        if (existingCompany.getSsoToken() == null) {
+        if (savedCompany.get().getSsoToken() == null) {
             throw new CompanyAccountAlreadyExisted(String.format("Email: %s is already existed.", googleEmail));
         }
 
-        if (!existingCompany.getSsoToken().equals(googleId)) {
-            throw new InvalidCredentialsException(String.format("Email: %s contains googleId different from the saved record.", googleEmail));
+        if (!savedCompany.get().getSsoToken().equals(googleId)) {
+            throw new InvalidCredentialsException(String.format(String.format("Google ID does not match the stored Google ID for the email address: %s. This account is linked to a different Google account.", googleEmail)));
         }
         // Has email and sso --> Login
         TokenPairDto tokenPairDto = jweTokenService.generateTokenPair(
-                existingCompany.getCompanyId(),
-                existingCompany.getEmail(),
+                savedCompany.get().getCompanyId(),
+                savedCompany.get().getEmail(),
                 Role.COMPANY,
-                existingCompany.isActivated()
+                savedCompany.get().isActivated()
         );
 
-        return new GoogleOAuthResponseDto(tokenPairDto, null, existingCompany.getEmail(), null);
+        return new GoogleOAuthResponseDto(tokenPairDto, null, savedCompany.get().getEmail(), null);
     }
 
     @Override
     public GoogleIdToken.Payload verifyAndGetGoogleIdTokenPayload(String authorizationCode) throws IOException  {
         GoogleTokenResponse responseToken = new GoogleAuthorizationCodeTokenRequest(
-                netHttpTransport,
-                gsonFactory,
+                NET_HTTP_TRANSPORT,
+                GSON_FACTORY,
                 "https://oauth2.googleapis.com/token",
                 clientId,
                 clientSecret,
