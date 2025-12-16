@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .httpBasic(basic -> {
                 })
                 .csrf(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
                 .cors(
                         cors -> cors
                                 .configurationSource(
