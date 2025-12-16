@@ -10,5 +10,4 @@ import java.util.UUID;
 @Repository
 public interface CompanyAuthRepository extends JpaRepository<CompanyAuthEntity, UUID> {
     Optional<CompanyAuthEntity> findByEmail(String email);
-    Optional<CompanyAuthEntity> findByCompanyId(String id);
 }

@@ -5,5 +5,5 @@ import rmit.saintgiong.authapi.internal.dto.CompanyLoginResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 
 public interface InternalGetCompanyAuthInterface {
-    public LoginServiceDto authenticateWithEmailAndPassword(CompanyLoginRequestDto loginDto);
+    LoginServiceDto authenticateWithEmailAndPassword(CompanyLoginRequestDto loginDto);
 }
