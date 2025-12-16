@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.dto;
+package rmit.saintgiong.authapi.internal.dto.common;
 
 import lombok.*;
 
@@ -7,7 +7,7 @@ import lombok.*;
 @Getter @Setter @ToString
 @AllArgsConstructor
 public class GenericResponseDto<T> {
-    private String code;
+    private boolean success;
     private String message;
     private final T data;
 }

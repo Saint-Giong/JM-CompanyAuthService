@@ -8,10 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
-import rmit.saintgiong.authservice.common.auth.type.Role;
-import rmit.saintgiong.authservice.common.auth.type.TokenType;
-import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
-import rmit.saintgiong.authservice.common.dto.TokenPairDto;
+import rmit.saintgiong.authapi.internal.type.Role;
+import rmit.saintgiong.authapi.internal.type.TokenType;
+import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
+import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.TokenExpiredException;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 
@@ -36,6 +36,9 @@ public class JweTokenService {
 
     @Value("${jwe.issuer}")
     private String issuer;
+
+    @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
+    private long registerTokenTtlSeconds;
 
     @Value("${jwe.access-token-ttl-seconds:900}")  // Default: 15 minutes
     private long accessTokenTtlSeconds;
@@ -109,11 +112,9 @@ public class JweTokenService {
         }
     }
 
-
-
     /**
      * Refreshes an access token using a valid refresh token.
-     * Old refresh token is revoked and new tokens are generated.
+     * The old refresh token is revoked and new tokens are generated.
      *
      * @param refreshToken The refresh token
      * @return New TokenPairDto with fresh access token and rotated refresh token
@@ -187,13 +188,83 @@ public class JweTokenService {
             throw new InvalidTokenException("Invalid token type: expected ACCESS token");
         }
 
-        // Check if token is in the blocklist (revoked)
+        // Check if the token is in the blocklist (revoked)
         String tokenId = claims.getJti();
         if (tokenStorageService.isAccessTokenBlocked(tokenId)) {
             throw new InvalidTokenException("Access token has been revoked");
         }
 
         return claims;
+    }
+
+    /**
+     * Generate the temporary token for a user registration process when they use Google as External SSO
+     * @param email  The user email
+     * @param googleId The googleId returning from GoogleIdToken.Payload
+     * @return String Returns the temp token string
+     */
+    public String generateRegistrationTokenForGoogleAuth(String email, String googleId) {
+        try {
+            String tokenId = UUID.randomUUID().toString();
+
+            long now = Instant.now().getEpochSecond();
+            long exp = now + registerTokenTtlSeconds;
+
+            JWEHeader header = new JWEHeader
+                    .Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
+                    .type(JOSEObjectType.JOSE)
+                    .issuer(issuer)
+                    .customParam("iat", now)
+                    .customParam("exp", exp)
+                    .build();
+
+            Map<String, Object> payloadMap = new LinkedHashMap<>();
+            payloadMap.put("googleId", googleId);
+            payloadMap.put("email", email);
+            payloadMap.put("role", Role.COMPANY);
+            payloadMap.put("type", TokenType.TEMP);
+            payloadMap.put("jti", tokenId);
+
+            Payload payload = new Payload(payloadMap);
+            JWEObject jweObject = new JWEObject(header, payload);
+            jweObject.encrypt(new RSAEncrypter(publicKey));
+
+            return jweObject.serialize();
+        } catch (JOSEException e) {
+            log.error("Failed to generate register token for email {}", email, e);
+            throw new RuntimeException("Register token generation failed", e);
+        }
+    }
+
+    public String getGoogleIdFromJweToken(String jweString) {
+        try {
+            JWEObject jweObject = JWEObject.parse(jweString);
+            jweObject.decrypt(new RSADecrypter(privateKey));
+
+            // Validate expiration from header
+            Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
+            if (exp != null) {
+                long now = Instant.now().getEpochSecond();
+                if (now > exp.longValue()) {
+                    throw new TokenExpiredException("Token has expired");
+                }
+            }
+
+            // Extract payload
+            Map<String, Object> payloadMap = jweObject.getPayload().toJSONObject();
+
+            String googleIdString = payloadMap.get("googleId") != null ? payloadMap.get("googleId").toString() : null;
+            if (googleIdString == null) {
+                throw new InvalidTokenException("Google ID not found in token.");
+            }
+            return googleIdString;
+
+        } catch (TokenExpiredException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Token validation failed", e);
+            throw new InvalidTokenException("Invalid or malformed token");
+        }
     }
 
     // Generates a single JWE token with the specified parameters.

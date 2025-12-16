@@ -56,8 +56,10 @@ eureka:
 
 jwe:
   issuer: ${JWE_ISSUER:JM_BACKEND}
+  register-token-ttl-seconds: ${JWE_REGISTER_TOKEN_TTL:300}
   access-token-ttl-seconds: ${JWE_ACCESS_TOKEN_TTL:900}
   refresh-token-ttl-seconds: ${JWE_REFRESH_TOKEN_TTL:604800}
+
   # Load keys from classpath files (more reliable than env vars for multi-line keys)
   public-key-path: ${JWE_PUBLIC_KEY_PATH:classpath:keys/public_key.pem}
   private-key-path: ${JWE_PRIVATE_KEY_PATH:classpath:keys/private_key.pem}
@@ -79,3 +81,6 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
   show-actuator: false
+
+google:
+  oauth2_redirect_uri: ${OATH2_REDIRECT_URI:http://localhost:8080/dashboard}
