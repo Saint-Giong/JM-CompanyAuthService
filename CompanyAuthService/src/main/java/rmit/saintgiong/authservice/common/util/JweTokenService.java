@@ -75,6 +75,7 @@ public class JweTokenService {
      * @param userId The user/company ID
      * @param email  The user email
      * @param role   The user role
+     * @param isActivated Whether the user is activated or not.
      * @return TokenPairDto containing both tokens and their expiration info
      */
     public TokenPairDto generateTokenPair(UUID userId, String email, Role role, Boolean isActivated) {
@@ -109,7 +110,6 @@ public class JweTokenService {
             throw new RuntimeException("Token generation failed", e);
         }
     }
-
 
 
     /**

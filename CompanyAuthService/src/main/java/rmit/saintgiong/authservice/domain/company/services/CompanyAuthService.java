@@ -40,7 +40,6 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
 
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final TokenStorageService tokenStorageService;
     private final OtpService otpService;
     private final JweTokenService jweTokenService;
 
