@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
+import rmit.saintgiong.authapi.internal.google_oauth.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
@@ -59,6 +60,9 @@ class CompanyAuthRegistrationTest {
 
     @MockitoBean
     private JweTokenService jweTokenService;
+
+    @MockitoBean
+    private InternalGoogleOAuthInterface googleOAuthInterface;
 
     @MockitoBean
     private CompanyAuthMapper companyAuthMapper;

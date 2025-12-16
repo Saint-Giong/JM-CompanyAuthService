@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.dto;
+package rmit.saintgiong.authapi.internal.dto.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

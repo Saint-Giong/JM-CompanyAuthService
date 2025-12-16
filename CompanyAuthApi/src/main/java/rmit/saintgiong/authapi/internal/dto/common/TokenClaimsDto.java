@@ -1,11 +1,11 @@
-package rmit.saintgiong.authservice.common.dto;
+package rmit.saintgiong.authapi.internal.dto.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import rmit.saintgiong.authservice.common.auth.type.Role;
-import rmit.saintgiong.authservice.common.auth.type.TokenType;
+import rmit.saintgiong.authapi.internal.type.Role;
+import rmit.saintgiong.authapi.internal.type.TokenType;
 
 import java.util.UUID;
 

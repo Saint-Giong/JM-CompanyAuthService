@@ -5,7 +5,7 @@ spring:
   application:
     name: auth-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/auth_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/auth_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -22,6 +22,13 @@ spring:
       port: 6379
       password: ${REDIS_PASSWORD:}
       timeout: 2000ms
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${OAUTH2_CLIENT_ID}
+            client-secret: ${OAUTH2_CLIENT_SECRET}
 
 management:
   endpoints:
@@ -49,8 +56,10 @@ eureka:
 
 jwe:
   issuer: ${JWE_ISSUER:JM_BACKEND}
+  register-token-ttl-seconds: ${JWE_REGISTER_TOKEN_TTL:300}
   access-token-ttl-seconds: ${JWE_ACCESS_TOKEN_TTL:900}
   refresh-token-ttl-seconds: ${JWE_REFRESH_TOKEN_TTL:604800}
+
   # Load keys from classpath files (more reliable than env vars for multi-line keys)
   public-key-path: ${JWE_PUBLIC_KEY_PATH:classpath:keys/public_key.pem}
   private-key-path: ${JWE_PRIVATE_KEY_PATH:classpath:keys/private_key.pem}
@@ -60,8 +69,6 @@ otp:
   max-verification-attempts: 5   # max wrong attempts before lockout
   resend-cooldown-seconds: 60    # cooldown between resend requests
   max-per-hour: 5                # max OTPs per hour per company
-
-
 
 # OpenAPI/Swagger Configuration
 springdoc:
@@ -74,3 +81,6 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
   show-actuator: false
+
+google:
+  oauth2_redirect_uri: ${OATH2_REDIRECT_URI:http://localhost:8080/dashboard}

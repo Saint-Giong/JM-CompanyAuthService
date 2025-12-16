@@ -3,6 +3,7 @@ package rmit.saintgiong.authservice.common.security;
 import io.jsonwebtoken.lang.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,8 +21,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .httpBasic(basic -> {
-                })
                 .csrf(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .cors(
@@ -36,10 +35,19 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/api-docs/**",
                                 "/api-docs.yaml",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/actuator/health/readiness"
                         ).permitAll()
-                        .requestMatchers("/register").permitAll()
-                        .anyRequest().permitAll()
+                        .requestMatchers(
+                                "/register",
+                                "/login"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/google/redirect-url",
+                                "/google/auth"
+                        ).permitAll()
+
+                        .anyRequest().authenticated()
                 );
 
         return http.build();

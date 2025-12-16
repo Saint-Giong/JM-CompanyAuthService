@@ -5,16 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyLoginRequestDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
+import rmit.saintgiong.authapi.internal.dto.*;
+import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
-import rmit.saintgiong.authservice.common.auth.type.Role;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
-import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
-import rmit.saintgiong.authservice.common.dto.TokenPairDto;
+import rmit.saintgiong.authapi.internal.type.Role;
+import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
@@ -26,6 +24,7 @@ import rmit.saintgiong.authservice.common.util.TokenStorageService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
+import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -46,25 +45,25 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
     /**
      * Registers a new company with the authentication system.
      * 
-     * @param registrationDto the company registration data transfer object containing
+     * @param requestDto the company registration data transfer object containing
      *                        the email, password, and other registration details
      * @return a {@link CompanyRegistrationResponseDto} containing the registered
      *         company's ID, email, success status, and a confirmation message
      */
     @Override
     @Transactional
-    public CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto registrationDto) {
+    public CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto requestDto) {
         // Check if email already exists
-        Optional<CompanyAuthEntity> existingAuth = companyAuthRepository.findByEmail(registrationDto.getEmail());
+        Optional<CompanyAuthEntity> existingAuth = companyAuthRepository.findByEmail(requestDto.getEmail());
         if (existingAuth.isPresent()) {
             throw new CompanyAccountAlreadyExisted("Email already registered");
         }
 
         // Convert DTO to model
-        CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationDto(registrationDto);
+        CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationDto(requestDto);
         
         // Encode password in the model
-        companyAuth.setHashedPassword(passwordEncoder.encode(registrationDto.getPassword()));
+        companyAuth.setHashedPassword(passwordEncoder.encode(requestDto.getPassword()));
 
         // Convert model to entity and save (isActivated remains false)
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
@@ -74,8 +73,42 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
         // Generate OTP and store in Redis with 2-minute TTL
         String otp = otpService.generateOtp(savedAuth.getCompanyId());
         // Send OTP email
-        emailService.sendOtpEmail(registrationDto.getEmail(), registrationDto.getCompanyName(), otp);
+        emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), otp);
         
+        return CompanyRegistrationResponseDto.builder()
+                .companyId(savedAuth.getCompanyId())
+                .email(savedAuth.getEmail())
+                .success(true)
+                .message("Company registered successfully. Please check your email for the OTP to activate your account.")
+                .build();
+    }
+
+
+    @Override
+    @Transactional
+    public CompanyRegistrationResponseDto registerCompanyWithGoogleId(CompanyRegistrationGoogleRequestDto requestDto, String tempToken) {
+        // Convert DTO to model
+        CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(requestDto);
+
+        String googleId = jweTokenService.getGoogleIdFromJweToken(tempToken);
+        String emailFromToken = jweTokenService.getGoogleIdFromJweToken(tempToken);
+        if (googleId == null || emailFromToken == null) {
+            throw new InvalidTokenException("Missing either googleId or email in TEMP_COOKIE.");
+        }
+
+        if (!emailFromToken.equals(requestDto.getEmail())) {
+            throw new InvalidTokenException("Email in TEMP_COOKIE does not match the registration email.");
+        }
+
+        companyAuth.setSsoToken(googleId);
+
+        CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
+
+        //TODO: Add kafka publisher to create profile
+
+        String otp = otpService.generateOtp(savedAuth.getCompanyId());
+        emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), otp);
+
         return CompanyRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
                 .email(savedAuth.getEmail())
@@ -86,13 +119,13 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
 
     /**
      * Authenticates a company with email and password.
-     * If account is not activated, generates and sends a new OTP.
+     * If an account is not activated, it generates and sends a new OTP.
      *
      * @param loginDto The login credentials
-     * @return CompanyLoginResponseDto with authentication result and tokens if activated
+     * @return CompanyLoginResponseDto with an authentication result and tokens if activated
      */
-    @Transactional
     @Override
+    @Transactional
     public LoginServiceDto authenticateWithEmailAndPassword(CompanyLoginRequestDto loginDto) {
         // Find company by email
         CompanyAuthEntity companyAuth = companyAuthRepository.findByEmail(loginDto.getEmail())
@@ -174,6 +207,8 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
         log.info("OTP resent to company: {}", companyAuth.getEmail());
     }
 
+
+
     /**
      * Validates access token and returns the company ID.
      *
@@ -195,7 +230,7 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
     @Override
     public LoginServiceDto refreshTokenPair(String refreshToken) {
         TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
-        
+
         return LoginServiceDto.builder()
                 .success(true)
                 .isActivated(true)

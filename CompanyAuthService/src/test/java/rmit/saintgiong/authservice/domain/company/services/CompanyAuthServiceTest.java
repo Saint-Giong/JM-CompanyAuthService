@@ -12,8 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
-import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
-import rmit.saintgiong.authservice.common.dto.TokenPairDto;
+
+import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
+import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 import rmit.saintgiong.authservice.common.util.EmailService;
@@ -23,6 +24,7 @@ import rmit.saintgiong.authservice.common.util.TokenStorageService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
+import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -108,7 +110,7 @@ class CompanyAuthServiceTest {
                 .build();
     }
 
-    //   SUCCESSFUL REGISTRATION TESTS  
+    //   SUCCESSFUL REGISTRATION TESTS
 
     @Nested
     @DisplayName("Successful Registration Tests")
@@ -135,7 +137,7 @@ class CompanyAuthServiceTest {
             assertThat(response.getEmail()).isEqualTo(TEST_EMAIL);
             assertThat(response.isSuccess()).isTrue();
             assertThat(response.getMessage()).isEqualTo( "Company registered successfully. Please check your email for the OTP to activate your account.");
-            
+
             // Verify OTP generation and email sending
             verify(otpService, times(1)).generateOtp(testCompanyId);
             verify(emailService, times(1)).sendOtpEmail(eq(TEST_EMAIL), eq("Test Company"), eq("123456"));
@@ -143,7 +145,7 @@ class CompanyAuthServiceTest {
     }
 
 
-    //   PASSWORD ENCODING TESTS  
+    //   PASSWORD ENCODING TESTS
 
     @Nested
     @DisplayName("Password Encoding Tests")
@@ -170,7 +172,7 @@ class CompanyAuthServiceTest {
 
     }
 
-    //   DUPLICATE EMAIL TESTS  
+    //   DUPLICATE EMAIL TESTS
 
     @Nested
     @DisplayName("Duplicate Email Tests")
@@ -193,7 +195,7 @@ class CompanyAuthServiceTest {
         }
     }
 
-    //   TOKEN VALIDATION TESTS  
+    //   TOKEN VALIDATION TESTS
 
     @Nested
     @DisplayName("Token Validation Tests")
@@ -233,7 +235,7 @@ class CompanyAuthServiceTest {
         }
     }
 
-    //   REFRESH TOKEN TESTS  
+    //   REFRESH TOKEN TESTS
 
     @Nested
     @DisplayName("Refresh Token Tests")
@@ -246,7 +248,7 @@ class CompanyAuthServiceTest {
             String refreshToken = "valid.refresh.token";
             String newAccessToken = "new.access.token";
             String newRefreshToken = "new.refresh.token";
-            
+
             TokenPairDto tokenPair = TokenPairDto.builder()
                     .accessToken(newAccessToken)
                     .refreshToken(newRefreshToken)
