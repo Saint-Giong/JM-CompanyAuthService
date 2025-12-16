@@ -17,10 +17,9 @@ import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.text.ParseException;
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 // Service for generating and validating JWE (JSON Web Encryption) tokens.
 // Integrates with Redis for token storage and validation.
@@ -120,7 +119,7 @@ public class JweTokenService {
      * @return New TokenPairDto with fresh access token and rotated refresh token
      */
     public TokenPairDto refreshAccessToken(String refreshToken) {
-        TokenClaimsDto claims = validateAndDecrypt(refreshToken);
+        TokenClaimsDto claims = buildTokenClaimsDto(refreshToken);
 
         // Verify this is a refresh token
         if (claims.getType() != TokenType.REFRESH) {
@@ -181,7 +180,7 @@ public class JweTokenService {
      * @return TokenClaimsDto containing the token claims
      */
     public TokenClaimsDto validateAccessToken(String accessToken) {
-        TokenClaimsDto claims = validateAndDecrypt(accessToken);
+        TokenClaimsDto claims = buildTokenClaimsDto(accessToken);
 
         // Verify this is an access token
         if (claims.getType() != TokenType.ACCESS) {
@@ -199,7 +198,8 @@ public class JweTokenService {
 
     /**
      * Generate the temporary token for a user registration process when they use Google as External SSO
-     * @param email  The user email
+     *
+     * @param email    The user email
      * @param googleId The googleId returning from GoogleIdToken.Payload
      * @return String Returns the temp token string
      */
@@ -238,22 +238,10 @@ public class JweTokenService {
 
     public String getGoogleIdFromJweToken(String jweString) {
         try {
-            JWEObject jweObject = JWEObject.parse(jweString);
-            jweObject.decrypt(new RSADecrypter(privateKey));
+            JWEObject jweObject = validateAndGetDecryptedJweObject(jweString, TokenType.TEMP);
+            Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
-            // Validate expiration from header
-            Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
-            if (exp != null) {
-                long now = Instant.now().getEpochSecond();
-                if (now > exp.longValue()) {
-                    throw new TokenExpiredException("Token has expired");
-                }
-            }
-
-            // Extract payload
-            Map<String, Object> payloadMap = jweObject.getPayload().toJSONObject();
-
-            String googleIdString = payloadMap.get("googleId") != null ? payloadMap.get("googleId").toString() : null;
+            String googleIdString = tokenPayload.get("googleId") != null ? tokenPayload.get("googleId").toString() : null;
             if (googleIdString == null) {
                 throw new InvalidTokenException("Google ID not found in token.");
             }
@@ -300,33 +288,21 @@ public class JweTokenService {
     }
 
     // Decrypts and validates a JWE token.
-    private TokenClaimsDto validateAndDecrypt(String jweString) {
+    private TokenClaimsDto buildTokenClaimsDto(String jweString) {
         try {
-            JWEObject jweObject = JWEObject.parse(jweString);
-            jweObject.decrypt(new RSADecrypter(privateKey));
+            JWEObject jweObject = validateAndGetDecryptedJweObject(jweString, null);
+            Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
-            // Validate expiration from header
-            Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
-            if (exp != null) {
-                long now = Instant.now().getEpochSecond();
-                if (now > exp.longValue()) {
-                    throw new TokenExpiredException("Token has expired");
-                }
-            }
-
-            // Extract payload
-            Map<String, Object> payloadMap = jweObject.getPayload().toJSONObject();
-
-            // Get header claims
             Number iat = (Number) jweObject.getHeader().getCustomParam("iat");
+            Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
             String iss = jweObject.getHeader().getIssuer();
 
             return TokenClaimsDto.builder()
-                    .sub(UUID.fromString((String) payloadMap.get("sub")))
-                    .email((String) payloadMap.get("email"))
-                    .role(Role.valueOf((String) payloadMap.get("role")))
-                    .type(TokenType.valueOf((String) payloadMap.get("type")))
-                    .jti((String) payloadMap.get("jti"))
+                    .sub(UUID.fromString((String) tokenPayload.get("sub")))
+                    .email((String) tokenPayload.get("email"))
+                    .role(Role.valueOf((String) tokenPayload.get("role")))
+                    .type(TokenType.valueOf((String) tokenPayload.get("type")))
+                    .jti((String) tokenPayload.get("jti"))
                     .iat(iat != null ? iat.longValue() : 0)
                     .exp(exp != null ? exp.longValue() : 0)
                     .iss(iss)
@@ -340,4 +316,38 @@ public class JweTokenService {
         }
     }
 
+    private JWEObject validateAndGetDecryptedJweObject(String jweString, TokenType type) throws JOSEException, ParseException {
+        JWEObject jweObject = JWEObject.parse(jweString);
+        jweObject.decrypt(new RSADecrypter(privateKey));
+        Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
+
+        Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
+        if (exp != null) {
+            long now = Instant.now().getEpochSecond();
+            if (now > exp.longValue()) {
+                throw new TokenExpiredException("Token has expired");
+            }
+        }
+
+        String tokenIssuer = jweObject.getHeader().getIssuer();
+        if (tokenIssuer == null || !tokenIssuer.equals(issuer)) {
+            throw new InvalidTokenException("Invalid token issuer");
+        }
+
+        List<Role> roleList = Arrays.asList(Role.values());
+        String role = tokenPayload.get("role") != null ? tokenPayload.get("role").toString() : null;
+        if (role == null || roleList.stream().anyMatch(r -> r.name().equals(role))) {
+            throw new InvalidTokenException(String.format("Invalid token role: %s, expected COMPANY", role));
+        }
+
+        if (type != null && type.equals(TokenType.TEMP)) {
+            Object typeObj = tokenPayload.get("type");
+            String typeStr = typeObj != null ? typeObj.toString() : null;
+            if (typeStr == null || !typeStr.equalsIgnoreCase(TokenType.TEMP.name())) {
+                throw new InvalidTokenException("Invalid token type: expected TEMP");
+            }
+        }
+
+        return jweObject;
+    }
 }
