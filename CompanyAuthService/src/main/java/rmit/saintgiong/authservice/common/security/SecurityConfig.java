@@ -36,11 +36,16 @@ public class SecurityConfig {
                                 "/api-docs.yaml",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers("/register").permitAll()
-                        .requestMatchers("/hello").authenticated()
-                        .anyRequest().permitAll()
-                )
-                .oauth2Login(Customizer.withDefaults());
+                        .requestMatchers(
+                                "/register",
+                                "/login"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/google/**"
+                        ).permitAll()
+
+                        .anyRequest().authenticated()
+                );
 
         return http.build();
     }
