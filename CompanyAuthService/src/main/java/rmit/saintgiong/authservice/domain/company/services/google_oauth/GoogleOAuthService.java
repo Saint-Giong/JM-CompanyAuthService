@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.google_oauth.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authapi.internal.service.google_oauth.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
