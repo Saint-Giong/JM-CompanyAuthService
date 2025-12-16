@@ -41,7 +41,8 @@ public class SecurityConfig {
                                 "/login"
                         ).permitAll()
                         .requestMatchers(
-                                "/google/**"
+                                "/google/redirect-url",
+                                "/google/auth"
                         ).permitAll()
 
                         .anyRequest().authenticated()

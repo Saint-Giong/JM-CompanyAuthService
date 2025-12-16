@@ -15,6 +15,7 @@ public interface CompanyAuthMapper {
     @Mapping(target = "companyId", ignore = true)
     CompanyAuth fromCompanyRegistrationDto(CompanyRegistrationRequestDto dto);
 
+    @Mapping(target = "hashedPassword", ignore = true)
     CompanyAuth fromCompanyRegistrationGoogleDto(CompanyRegistrationGoogleRequestDto dto);
 
     CompanyAuthEntity toEntity(CompanyAuth model);
