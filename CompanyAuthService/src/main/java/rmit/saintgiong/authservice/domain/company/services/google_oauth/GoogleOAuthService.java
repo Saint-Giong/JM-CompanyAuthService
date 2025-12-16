@@ -17,6 +17,7 @@ import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterfa
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
@@ -81,6 +82,9 @@ public class GoogleOAuthService implements InternalGoogleOAuthInterface {
             throw new CompanyAccountAlreadyExisted(String.format("Email: %s is already existed.", googleEmail));
         }
 
+        if (!existingCompany.getSsoToken().equals(googleId)) {
+            throw new InvalidCredentialsException(String.format("Email: %s contains googleId different from the saved record.", googleEmail));
+        }
         // Has email and sso --> Login
         TokenPairDto tokenPairDto = jweTokenService.generateTokenPair(
                 existingCompany.getCompanyId(),

@@ -52,7 +52,7 @@ public class CompanyAuthController {
     private final CompanyAuthMapper companyAuthMapper;
 
     /**
-     * Registers a new company account.
+     * Registers a new company account
      *
      * @param registrationDto the company registration details containing email, password,
      *                        and other required information
@@ -281,10 +281,14 @@ public class CompanyAuthController {
     @GetMapping("/google/auth")
     public Callable<ResponseEntity<GenericResponseDto<?>>> handleGoogleCallback(
             HttpServletResponse response,
-            @RequestParam("code") String authorizationCode
+            @RequestParam("code") String code
     ) {
         return () -> {
-            GoogleOAuthResponseDto oauthResponseDto = internalGoogleOAuthInterface.authenticateGoogleUser(authorizationCode);
+            if (code == null || code.trim().isEmpty()) {
+                throw new InvalidTokenException("Authorization code is missing");
+            }
+
+            GoogleOAuthResponseDto oauthResponseDto = internalGoogleOAuthInterface.authenticateGoogleUser(code);
 
             TokenPairDto tokenPairDto = oauthResponseDto.getTokenPairDto();
             // login is ok
@@ -335,13 +339,22 @@ public class CompanyAuthController {
     @PostMapping("/google/register")
     public Callable<ResponseEntity<GenericResponseDto<?>>> registerCompanyWithGoogleAuthentication(
             @Valid @RequestBody CompanyRegistrationGoogleRequestDto requestDto,
-            @CookieValue(name = TEMP_COOKIE_NAME) String tempToken
+            @CookieValue(name = TEMP_COOKIE_NAME) String tempToken,
+            HttpServletResponse response
     ) {
         return () -> {
-            CompanyRegistrationResponseDto response = internalCreateCompanyAuthInterface.registerCompanyWithGoogleId(requestDto, tempToken);
+            CompanyRegistrationResponseDto registerResponseDto = internalCreateCompanyAuthInterface.registerCompanyWithGoogleId(requestDto, tempToken);
+
+            Cookie tempTokenCookie = new Cookie(TEMP_COOKIE_NAME, "");
+            tempTokenCookie.setPath("/");
+            tempTokenCookie.setHttpOnly(true);
+            tempTokenCookie.setSecure(false); // TODO: change to true when deployed with HTTPS
+            tempTokenCookie.setMaxAge(0);
+            response.addCookie(tempTokenCookie);
+
             return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(new GenericResponseDto<>(true, "Register company successfully!", response));
+                    .body(new GenericResponseDto<>(true, "Register company successfully!", registerResponseDto));
         };
     }
 
