@@ -1,0 +1,156 @@
+// java
+package rmit.saintgiong.authservice.domain.company.services.google_oauth;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
+import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.type.Role;
+import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
+import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
+
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class GoogleOAuthServiceTest {
+
+    @Mock
+    private CompanyAuthRepository companyAuthRepository;
+    @Mock
+    private InternalCreateCompanyAuthInterface createCompanyAuthInterface;
+    @Mock
+    private JweTokenService jweTokenService;
+
+    private GoogleOAuthService googleOAuthService;
+
+    @BeforeEach
+    void setUp() {
+        googleOAuthService = Mockito.spy(new GoogleOAuthService(
+                companyAuthRepository,
+                createCompanyAuthInterface,
+                jweTokenService
+        ));
+        ReflectionTestUtils.setField(googleOAuthService, "registerTokenTtlSeconds", 300L);
+    }
+
+    @Test
+    void authenticateGoogleUser_returnsRegisterPayload_whenCompanyNotFound() throws Exception {
+        String code = "new-user-code";
+        GoogleIdToken.Payload payload = payload("google-id", "new@company.com", true, "New User");
+        doReturn(payload).when(googleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+        when(companyAuthRepository.findByEmail("new@company.com")).thenReturn(Optional.empty());
+        when(jweTokenService.generateRegistrationTokenForGoogleAuth("new@company.com", "google-id"))
+                .thenReturn("temp-token");
+
+        GoogleOAuthResponseDto result = googleOAuthService.authenticateGoogleUser(code);
+
+        assertNull(result.getTokenPairDto());
+        assertEquals("temp-token", result.getRegisterToken());
+        assertEquals(300L, result.getRegisterTokenExpiresIn());
+        assertEquals("new@company.com", result.getEmail());
+        assertEquals("New User", result.getName());
+    }
+
+    @Test
+    void authenticateGoogleUser_throwsConflict_whenEmailExistsWithoutSso() throws Exception {
+        String code = "conflict-code";
+        GoogleIdToken.Payload payload = payload("google-id", "conflict@company.com", true, "Conflict User");
+        doReturn(payload).when(googleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+
+        CompanyAuthEntity entity = mock(CompanyAuthEntity.class);
+        when(entity.getSsoToken()).thenReturn(null);
+        when(companyAuthRepository.findByEmail("conflict@company.com")).thenReturn(Optional.of(entity));
+
+        assertThrows(CompanyAccountAlreadyExisted.class, () -> googleOAuthService.authenticateGoogleUser(code));
+        verify(jweTokenService, never()).generateRegistrationTokenForGoogleAuth(anyString(), anyString());
+    }
+
+    @Test
+    void authenticateGoogleUser_returnsTokenPair_whenCompanyHasSso() throws Exception {
+        String code = "login-code";
+        GoogleIdToken.Payload payload = payload("google-id", "login@company.com", true, "Login User");
+        doReturn(payload).when(googleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+
+        UUID companyId = UUID.randomUUID();
+        CompanyAuthEntity entity = mock(CompanyAuthEntity.class);
+        when(entity.getSsoToken()).thenReturn("google-id");
+        when(entity.getCompanyId()).thenReturn(companyId);
+        when(entity.getEmail()).thenReturn("login@company.com");
+        when(entity.isActivated()).thenReturn(true);
+        when(companyAuthRepository.findByEmail("login@company.com")).thenReturn(Optional.of(entity));
+
+        TokenPairDto tokenPairDto = TokenPairDto.builder()
+                .accessToken("access-token")
+                .refreshToken("refresh-token")
+                .accessTokenExpiresIn(900L)
+                .refreshTokenExpiresIn(604800L)
+                .build();
+        when(jweTokenService.generateTokenPair(companyId, "login@company.com", Role.COMPANY, true))
+                .thenReturn(tokenPairDto);
+
+        GoogleOAuthResponseDto result = googleOAuthService.authenticateGoogleUser(code);
+
+        assertNotNull(result.getTokenPairDto());
+        assertEquals("access-token", result.getTokenPairDto().getAccessToken());
+        assertEquals("refresh-token", result.getTokenPairDto().getRefreshToken());
+        assertNull(result.getRegisterToken());
+        assertEquals("login@company.com", result.getEmail());
+        assertNull(result.getName());
+    }
+
+    @Test
+    void buildGoogleAuthUrl_containsAllRequiredParametersAndEncoding() throws Exception {
+        // Arrange
+        ReflectionTestUtils.setField(googleOAuthService, "clientId", "test-client-id");
+        ReflectionTestUtils.setField(googleOAuthService, "redirectLoginUri", "http://localhost:8080/callback");
+
+        // Act
+        String url = googleOAuthService.buildGoogleAuthUrl();
+
+        // Assert: basic URL parts
+        URI uri = new URI(url);
+        assertEquals("https", uri.getScheme());
+        assertEquals("accounts.google.com", uri.getHost());
+        assertEquals("/o/oauth2/v2/auth", uri.getPath());
+        assertNotNull(uri.getQuery());
+
+        // Parse and decode query parameters
+        Map<String, String> params = Arrays.stream(uri.getQuery().split("&"))
+                .map(s -> s.split("=", 2))
+                .collect(Collectors.toMap(a -> a[0], a -> URLDecoder.decode(a[1], StandardCharsets.UTF_8)));
+
+        assertEquals("test-client-id", params.get("client_id"));
+        assertEquals("http://localhost:8080/callback", params.get("redirect_uri"));
+        assertEquals("code", params.get("response_type"));
+        assertEquals("openid email profile", params.get("scope"));
+        assertEquals("offline", params.get("access_type"));
+        assertEquals("consent", params.get("prompt"));
+        assertEquals("login", params.get("state"));
+    }
+
+    private GoogleIdToken.Payload payload(String sub, String email, boolean verified, String name) {
+        GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
+        payload.setSubject(sub);
+        payload.setEmail(email);
+        payload.setEmailVerified(verified);
+        payload.set("name", name);
+        return payload;
+    }
+}

@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.dto;
+package rmit.saintgiong.authapi.internal.dto.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +17,7 @@ public class TokenPairDto {
     private String accessToken;
     
     // Longer-lived refresh token (JWE encrypted).
-    // Used to obtain new access tokens without re-authentication.
+    // Used to get new access tokens without re-authentication.
     private String refreshToken;
     
     // Access token expiration time in seconds.

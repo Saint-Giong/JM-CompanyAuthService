@@ -22,7 +22,7 @@ public class CompanyAuth {
 
     private String hashedPassword;
 
-    private String ssoProvider;
+    private String ssoToken;
 
     private boolean isActivated;
 

@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import rmit.saintgiong.authservice.common.dto.ErrorResponseDto;
+import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
 
 import java.time.LocalDateTime;
 

@@ -14,16 +14,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rmit.saintgiong.authapi.internal.dto.*;
+import rmit.saintgiong.authapi.internal.dto.common.GenericResponseDto;
+import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
+import rmit.saintgiong.authapi.internal.dto.oauth.GoogleRegistrationPrefillDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
-import rmit.saintgiong.authservice.common.dto.ErrorResponseDto;
+import rmit.saintgiong.authapi.internal.google_oauth.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
-import rmit.saintgiong.authservice.common.dto.TokenClaimsDto;
+import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 
+import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
@@ -35,15 +41,18 @@ public class CompanyAuthController {
     private final InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
     private final InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
     private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
+    private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;
+
     private final JweTokenService jweTokenService;
 
+    private static final String TEMP_COOKIE_NAME = "temp_token";
     private static final String AUTH_COOKIE_NAME = "auth_token";
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     private final CompanyAuthMapper companyAuthMapper;
 
     /**
-     * Registers a new company account.
+     * Registers a new company account
      *
      * @param registrationDto the company registration details containing email, password,
      *                        and other required information
@@ -81,9 +90,11 @@ public class CompanyAuthController {
                     )
             )
     })
+
     @PostMapping("/register")
     public Callable<ResponseEntity<CompanyRegistrationResponseDto>> registerCompanyWithEmailAndPassword(
-            @Valid @RequestBody CompanyRegistrationRequestDto registrationDto) {
+            @Valid @RequestBody CompanyRegistrationRequestDto registrationDto
+    ) {
         return () -> {
             CompanyRegistrationResponseDto response = internalCreateCompanyAuthInterface.registerCompany(registrationDto);
             return ResponseEntity
@@ -181,7 +192,8 @@ public class CompanyAuthController {
     public Callable<ResponseEntity<OtpVerificationResponseDto>> verifyAccount(
             @Valid @RequestBody OtpVerificationRequestDto otpDto,
             @CookieValue(name = AUTH_COOKIE_NAME, required = false) String authToken,
-            HttpServletResponse response) {
+            HttpServletResponse response
+    ) {
         return () -> {
 
             //TODO: use filter and security to check for cookie and get id from authenticated session instead
@@ -194,7 +206,7 @@ public class CompanyAuthController {
             TokenClaimsDto claims = jweTokenService.validateAccessToken(authToken);
             UUID companyId = claims.getSub();
 
-            // Verify OTP and activate account
+            // Verify OTP and activate an account
             internalUpdateCompanyAuthInterface.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
 
             return ResponseEntity.ok(
@@ -234,8 +246,7 @@ public class CompanyAuthController {
             )
     })
     @PostMapping("/resend-otp")
-    public Callable<ResponseEntity<OtpVerificationResponseDto>> resendOtp(
-            @CookieValue(name = AUTH_COOKIE_NAME, required = false) String authToken) {
+    public Callable<ResponseEntity<OtpVerificationResponseDto>> resendOtp(@CookieValue(name = AUTH_COOKIE_NAME, required = false) String authToken) {
         return () -> {
 
             //TODO: use filter and security to check for cookie and get id from authenticated session instead
@@ -260,9 +271,105 @@ public class CompanyAuthController {
         };
     }
 
+    @GetMapping("/google/redirect-url")
+    public ResponseEntity<GenericResponseDto<?>> getGoogleRedirectUrl() {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new GenericResponseDto<>(true, "", internalGoogleOAuthInterface.buildGoogleAuthUrl()));
+    }
+
+    @GetMapping("/google/auth")
+    public Callable<ResponseEntity<GenericResponseDto<?>>> handleGoogleCallback(
+            HttpServletResponse response,
+            @RequestParam("code") String code
+    ) {
+        return () -> {
+            if (code == null || code.trim().isEmpty()) {
+                throw new InvalidTokenException("Authorization code is missing");
+            }
+
+            GoogleOAuthResponseDto oauthResponseDto = internalGoogleOAuthInterface.authenticateGoogleUser(code);
+
+            TokenPairDto tokenPairDto = oauthResponseDto.getTokenPairDto();
+            // login is ok
+            if (tokenPairDto != null) {
+                Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenPairDto.getAccessToken());
+                authCookie.setHttpOnly(true);
+                authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+                authCookie.setPath("/");
+                authCookie.setMaxAge((int) tokenPairDto.getAccessTokenExpiresIn());
+                response.addCookie(authCookie);
+
+                // set a refresh token in HttpOnly cookie
+                if (tokenPairDto.getRefreshToken() != null && !tokenPairDto.getRefreshToken().isEmpty()) {
+                    Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenPairDto.getRefreshToken());
+                    refreshCookie.setHttpOnly(true);
+                    refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+                    refreshCookie.setPath("/");
+                    refreshCookie.setMaxAge((int) tokenPairDto.getRefreshTokenExpiresIn());
+                    response.addCookie(refreshCookie);
+                }
+
+                return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(new GenericResponseDto<>(true, "", null));
+            }
+
+            if (oauthResponseDto.getRegisterToken() != null) {
+                Cookie temp = new Cookie(TEMP_COOKIE_NAME, oauthResponseDto.getRegisterToken());
+                temp.setHttpOnly(true);
+                temp.setSecure(false);  //TODO: change to true when deployed with HTTPS
+                temp.setPath("/");
+                temp.setMaxAge((int) oauthResponseDto.getRegisterTokenExpiresIn());
+                response.addCookie(temp);
+
+                GoogleRegistrationPrefillDto prefillDto = new GoogleRegistrationPrefillDto(oauthResponseDto.getEmail(), oauthResponseDto.getName());
+
+                return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body(new GenericResponseDto<>(true, "", prefillDto));
+            }
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(new GenericResponseDto<>(false, "Unable to process Google Authentication", null));
+        };
+    }
+
+    @PostMapping("/google/register")
+    public Callable<ResponseEntity<GenericResponseDto<?>>> registerCompanyWithGoogleAuthentication(
+            @Valid @RequestBody CompanyRegistrationGoogleRequestDto requestDto,
+            @CookieValue(name = TEMP_COOKIE_NAME) String tempToken,
+            HttpServletResponse response
+    ) {
+        return () -> {
+            CompanyRegistrationResponseDto registerResponseDto = internalCreateCompanyAuthInterface.registerCompanyWithGoogleId(requestDto, tempToken);
+
+            Cookie tempTokenCookie = new Cookie(TEMP_COOKIE_NAME, "");
+            tempTokenCookie.setPath("/");
+            tempTokenCookie.setHttpOnly(true);
+            tempTokenCookie.setSecure(false); // TODO: change to true when deployed with HTTPS
+            tempTokenCookie.setMaxAge(0);
+            response.addCookie(tempTokenCookie);
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new GenericResponseDto<>(true, "Register company successfully!", registerResponseDto));
+        };
+    }
+
     @GetMapping("/hello")
     public String hello() {
         return "hello world";
     }
 
+    @GetMapping("/error")
+    public String error() {
+        return "error";
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboard() {
+        return "this is a dashboard";
+    }
 }

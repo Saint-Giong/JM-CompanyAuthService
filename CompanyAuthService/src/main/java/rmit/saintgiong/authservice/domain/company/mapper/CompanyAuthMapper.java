@@ -3,6 +3,7 @@ package rmit.saintgiong.authservice.domain.company.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import rmit.saintgiong.authapi.internal.dto.CompanyLoginResponseDto;
+import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
@@ -14,6 +15,8 @@ public interface CompanyAuthMapper {
     @Mapping(target = "companyId", ignore = true)
     CompanyAuth fromCompanyRegistrationDto(CompanyRegistrationRequestDto dto);
 
+    @Mapping(target = "hashedPassword", ignore = true)
+    CompanyAuth fromCompanyRegistrationGoogleDto(CompanyRegistrationGoogleRequestDto dto);
 
     CompanyAuthEntity toEntity(CompanyAuth model);
 
