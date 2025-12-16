@@ -241,6 +241,41 @@ public class JweTokenService {
         return jweObject.serialize();
     }
 
+    /**
+     * Revokes both access and refresh tokens during logout.
+     * Adds access token to blocklist and removes refresh token from whitelist.
+     *
+     * @param accessToken  The access token to revoke
+     * @param refreshToken The refresh token to revoke (can be null)
+     */
+    public void revokeTokens(String accessToken, String refreshToken) {
+        // Revoke access token by adding to blocklist
+        if (accessToken != null && !accessToken.isEmpty()) {
+            try {
+                TokenClaimsDto accessClaims = validateAndDecrypt(accessToken);
+                long now = Instant.now().getEpochSecond();
+                long remainingTtl = accessClaims.getExp() - now;
+                tokenStorageService.blockAccessToken(accessClaims.getJti(), remainingTtl);
+                log.debug("Access token blocked for user {}", accessClaims.getSub());
+            } catch (Exception e) {
+                // Token might be expired or invalid, ignore
+                log.debug("Could not block access token: {}", e.getMessage());
+            }
+        }
+
+        // Revoke refresh token by removing from whitelist
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            try {
+                TokenClaimsDto refreshClaims = validateAndDecrypt(refreshToken);
+                tokenStorageService.revokeRefreshToken(refreshClaims.getJti());
+                log.debug("Refresh token revoked for user {}", refreshClaims.getSub());
+            } catch (Exception e) {
+                // Token might be expired or invalid, ignore
+                log.debug("Could not revoke refresh token: {}", e.getMessage());
+            }
+        }
+    }
+
     // Decrypts and validates a JWE token.
     private TokenClaimsDto validateAndDecrypt(String jweString) {
         try {

@@ -206,4 +206,17 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface , 
                 .build();
     }
 
+    /**
+     * Logs out the user by revoking their authentication tokens.
+     * Access token is added to blocklist, refresh token is removed from whitelist.
+     *
+     * @param accessToken  The access token to revoke
+     * @param refreshToken The refresh token to revoke
+     */
+    @Override
+    public void logout(String accessToken, String refreshToken) {
+        jweTokenService.revokeTokens(accessToken, refreshToken);
+        log.info("User logged out successfully");
+    }
+
 }

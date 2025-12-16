@@ -321,6 +321,59 @@ public class CompanyAuthController {
         };
     }
 
+    /**
+     * Logs out the user by revoking their tokens and clearing cookies.
+     * Access token is added to blocklist, refresh token is removed from whitelist.
+     */
+    @Operation(
+            summary = "Logout",
+            description = "Logs out the user by revoking their authentication tokens and clearing cookies. " +
+                    "The access token is added to a blocklist and the refresh token is removed from the whitelist."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Logout successful",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LogoutResponseDto.class)
+                    )
+            )
+    })
+    @PostMapping("/logout")
+    public Callable<ResponseEntity<LogoutResponseDto>> logout(
+            @CookieValue(name = AUTH_COOKIE_NAME, required = false) String accessToken,
+            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+            HttpServletResponse response) {
+        return () -> {
+            // Revoke tokens via service layer (blocklist access token, remove refresh token)
+            internalUpdateCompanyAuthInterface.logout(accessToken, refreshToken);
+
+            // Clear auth cookie
+            Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, null);
+            authCookie.setHttpOnly(true);
+            authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+            authCookie.setPath("/");
+            authCookie.setMaxAge(0); // Delete cookie immediately
+            response.addCookie(authCookie);
+
+            // Clear refresh cookie
+            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, null);
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(0); // Delete cookie immediately
+            response.addCookie(refreshCookie);
+
+            return ResponseEntity.ok(
+                    LogoutResponseDto.builder()
+                            .success(true)
+                            .message("Logged out successfully.")
+                            .build()
+            );
+        };
+    }
+
     @GetMapping("/hello")
     public String hello() {
         return "hello world";
