@@ -55,10 +55,10 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8070/eureka}
 
 jwe:
-  issuer: ${JWE_ISSUER:JM_BACKEND}
-  register-token-ttl-seconds: ${JWE_REGISTER_TOKEN_TTL:300}
-  access-token-ttl-seconds: ${JWE_ACCESS_TOKEN_TTL:900}
-  refresh-token-ttl-seconds: ${JWE_REFRESH_TOKEN_TTL:604800}
+  issuer: JM_BACKEND
+  register-token-ttl-seconds: 300
+  access-token-ttl-seconds: 900
+  refresh-token-ttl-seconds: 604800
 
   # Load keys from classpath files (more reliable than env vars for multi-line keys)
   public-key-path: ${JWE_PUBLIC_KEY_PATH:classpath:keys/public_key.pem}
@@ -83,4 +83,4 @@ springdoc:
   show-actuator: false
 
 google:
-  oauth2_redirect_uri: ${OATH2_REDIRECT_URI:http://localhost:8080/dashboard}
+  oauth2_redirect_uri: http://localhost:8080/dashboard
