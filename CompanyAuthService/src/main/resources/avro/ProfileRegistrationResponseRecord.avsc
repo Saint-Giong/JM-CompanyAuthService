@@ -1,0 +1,11 @@
+{
+  "namespace": "rmit.saintgiong.authapi.internal.dto.avro",
+  "type": "record",
+  "name": "ProfileRegistrationResponseRecord",
+  "fields": [
+    {
+      "name": "companyId",
+      "type": "string"
+    }
+  ]
+}
