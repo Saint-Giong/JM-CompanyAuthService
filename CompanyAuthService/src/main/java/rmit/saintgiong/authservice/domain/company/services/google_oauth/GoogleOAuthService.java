@@ -23,6 +23,8 @@ import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -58,9 +60,10 @@ public class GoogleOAuthService implements InternalGoogleOAuthInterface {
 
     @Override
     public GoogleOAuthResponseDto authenticateGoogleUser(String authorizationCode) throws IOException {
-        GoogleIdToken.Payload googlePayload = verifyAndGetGoogleIdTokenPayload(authorizationCode);
+        String decodedAuthorizationCode = URLDecoder.decode(authorizationCode, StandardCharsets.UTF_8);
+        GoogleIdToken.Payload googlePayload = verifyAndGetGoogleIdTokenPayload(decodedAuthorizationCode);
 
-        if (!googlePayload.getEmailVerified()) {
+        if (!Boolean.TRUE.equals(googlePayload.getEmailVerified())) {
             throw new IllegalArgumentException(String.format("Email: %s is not verified by Google", googlePayload.getEmail()));
         }
 

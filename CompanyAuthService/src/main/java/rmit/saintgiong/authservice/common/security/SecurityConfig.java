@@ -38,11 +38,15 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 "/register",
-                                "/login"
+                                "/login",
+                                "/dashboard/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/google/redirect-url",
                                 "/google/auth"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/actuator/**"
                         ).permitAll()
 
                         .anyRequest().authenticated()
