@@ -1,0 +1,39 @@
+{
+  "namespace": "rmit.saintgiong.authapi.internal.dto.avro",
+  "type": "record",
+  "name": "ProfileRegistrationSentRecord",
+  "fields": [
+    {
+      "name": "companyId",
+      "type": {
+        "type": "string",
+        "logicalType": "uuid"
+      }
+    },
+    {
+      "name": "companyName",
+      "type": "string",
+      "default": "Default Name"
+    },
+    {
+      "name": "country",
+      "type": "string",
+      "default": "Default Country"
+    },
+    {
+      "name": "phoneNumber",
+      "type": "string",
+      "default": "Default Phone"
+    },
+    {
+      "name": "city",
+      "type": "string",
+      "default": "Default City"
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "default": "Default Address"
+    }
+  ]
+}
