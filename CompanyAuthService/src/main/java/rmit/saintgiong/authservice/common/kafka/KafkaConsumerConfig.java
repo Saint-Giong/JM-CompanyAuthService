@@ -14,6 +14,7 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
+import rmit.saintgiong.authapi.internal.type.KafkaTopic;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class KafkaConsumerConfig {
 
     @Bean
     public ConcurrentMessageListenerContainer<String, Object> replyContainer(ConsumerFactory<String, Object> consumerFactory) {
-        ContainerProperties containerProperties = new ContainerProperties("JM_COMPANY_REGISTRATION_REPLIED");
+        ContainerProperties containerProperties = new ContainerProperties(KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC);
         containerProperties.setGroupId("auth-service-reply-group");
 
         return new ConcurrentMessageListenerContainer<>(consumerFactory, containerProperties);

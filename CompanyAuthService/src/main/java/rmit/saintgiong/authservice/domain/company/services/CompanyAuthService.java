@@ -16,6 +16,7 @@ import rmit.saintgiong.authapi.internal.dto.avro.ProfileRegistrationSentRecord;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.type.KafkaTopic;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
@@ -87,10 +88,10 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
                 .setAddress(requestDto.getAddress())
                 .build();
 
-        ProducerRecord<String, Object> request = new ProducerRecord<>("JM_COMPANY_REGISTRATION", profileSentRecord);
+        ProducerRecord<String, Object> request = new ProducerRecord<>(KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC, profileSentRecord);
         request.headers().add(
                 KafkaHeaders.REPLY_TOPIC,
-                "JM_COMPANY_REGISTRATION_REPLIED".getBytes()
+                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes()
         );
 
         try {
