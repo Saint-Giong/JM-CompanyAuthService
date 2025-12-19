@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,4 +15,5 @@ public class LoginServiceDto {
     private String message;
     private String accessToken;
     private String refreshToken;
+    private String companyId;
 }
