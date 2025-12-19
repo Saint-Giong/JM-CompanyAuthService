@@ -98,10 +98,22 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
 
             ConsumerRecord<String, Object> response = responseRecord.get(10, TimeUnit.SECONDS);
 
-            System.out.println("Received Response: " + response);
-
+            Object responseValue = response.value();
+            if (responseValue instanceof ProfileRegistrationResponseRecord profileResponse) {
+                log.info(
+                        "Received profile registration response for companyId={}: {}",
+                        savedAuth.getCompanyId(),
+                        profileResponse
+                );
+            } else {
+                log.warn(
+                        "Received unexpected or null profile registration response for companyId={} : {}",
+                        savedAuth.getCompanyId(),
+                        responseValue
+                );
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error while sending profile registration message for companyId={}", savedAuth.getCompanyId(), e);
         }
 
         // Generate OTP and store in Redis with 2-minute TTL
@@ -117,10 +129,10 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
                 .build();
     }
 
-
     @Override
     @Transactional
-    public CompanyRegistrationResponseDto registerCompanyWithGoogleId(CompanyRegistrationGoogleRequestDto requestDto, String tempToken) {
+    public CompanyRegistrationResponseDto registerCompanyWithGoogleId(CompanyRegistrationGoogleRequestDto
+                                                                              requestDto, String tempToken) {
         // Convert DTO to model
         CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(requestDto);
 
