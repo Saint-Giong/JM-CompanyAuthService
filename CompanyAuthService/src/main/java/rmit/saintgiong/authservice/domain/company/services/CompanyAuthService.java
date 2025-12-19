@@ -138,7 +138,7 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
         CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(requestDto);
 
         String googleId = jweTokenService.getGoogleIdFromJweToken(tempToken);
-        String emailFromToken = jweTokenService.getGoogleIdFromJweToken(tempToken);
+        String emailFromToken = jweTokenService.getEmailFromJweString(tempToken);
         if (googleId == null || emailFromToken == null) {
             throw new InvalidTokenException("Missing either googleId or email in TEMP_COOKIE.");
         }
