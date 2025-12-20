@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 /**
  * DTO for company login response.
  * Contains authentication tokens and account activation status.
@@ -19,4 +17,5 @@ public class CompanyLoginResponseDto {
     private boolean success;
     private boolean isActivated;
     private String message;
+    private String companyId;
 }
