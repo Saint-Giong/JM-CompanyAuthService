@@ -36,16 +36,13 @@ public class CompanyRegistrationRequestDto {
     @NotBlank(message = "Country is required")
     private String country;
 
-    @NotBlank(message = "Phone number is required")
     @Pattern(
             regexp = "^\\+\\d{1,3}\\d{1,12}$",
             message = "Phone number must start with '+' followed by 1-3 digit country code and 1-12 digits"
     )
     private String phoneNumber;
 
-    @NotBlank(message = "City is required")
     private String city;
 
-    @NotBlank(message = "Address is required")
     private String address;
 }
