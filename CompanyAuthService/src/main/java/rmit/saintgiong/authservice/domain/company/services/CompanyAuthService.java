@@ -88,9 +88,9 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
                 .setCompanyId(savedAuth.getCompanyId())
                 .setCompanyName(requestDto.getCompanyName())
                 .setCountry(requestDto.getCountry())
-                .setPhoneNumber(requestDto.getPhoneNumber())
-                .setCity(requestDto.getCity())
-                .setAddress(requestDto.getAddress())
+                .setPhoneNumber(Optional.ofNullable(requestDto.getPhoneNumber()).orElse(""))
+                .setCity(Optional.ofNullable(requestDto.getCity()).orElse(""))
+                .setAddress(Optional.ofNullable(requestDto.getAddress()).orElse(""))
                 .build();
 
         ProducerRecord<String, Object> request = new ProducerRecord<>(KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
@@ -155,7 +155,43 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
 
-        // TODO: Add kafka publisher to create profile
+        // Send Kafka message to create profile in Profile Service
+        ProfileRegistrationSentRecord profileSentRecord = ProfileRegistrationSentRecord.newBuilder()
+                .setCompanyId(savedAuth.getCompanyId())
+                .setCompanyName(requestDto.getCompanyName())
+                .setCountry(requestDto.getCountry())
+                .setPhoneNumber(Optional.ofNullable(requestDto.getPhoneNumber()).orElse(""))
+                .setCity(Optional.ofNullable(requestDto.getCity()).orElse(""))
+                .setAddress(Optional.ofNullable(requestDto.getAddress()).orElse(""))
+                .build();
+
+        ProducerRecord<String, Object> request = new ProducerRecord<>(KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
+                profileSentRecord);
+        request.headers().add(
+                KafkaHeaders.REPLY_TOPIC,
+                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes());
+
+        try {
+            RequestReplyFuture<String, Object, Object> responseRecord = replyingKafkaTemplate.sendAndReceive(request);
+
+            ConsumerRecord<String, Object> response = responseRecord.get(10, TimeUnit.SECONDS);
+
+            Object responseValue = response.value();
+            if (responseValue instanceof ProfileRegistrationResponseRecord profileResponse) {
+                log.info(
+                        "Received profile registration response for Google OAuth companyId={}: {}",
+                        savedAuth.getCompanyId(),
+                        profileResponse);
+            } else {
+                log.warn(
+                        "Received unexpected or null profile registration response for Google OAuth companyId={} : {}",
+                        savedAuth.getCompanyId(),
+                        responseValue);
+            }
+        } catch (Exception e) {
+            log.error("Error while sending profile registration message for Google OAuth companyId={}",
+                    savedAuth.getCompanyId(), e);
+        }
 
         String otp = otpService.generateOtp(savedAuth.getCompanyId());
         emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), otp);
