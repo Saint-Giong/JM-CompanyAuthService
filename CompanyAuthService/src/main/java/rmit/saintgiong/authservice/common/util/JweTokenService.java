@@ -6,7 +6,6 @@ import com.nimbusds.jose.crypto.RSAEncrypter;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.type.TokenType;
@@ -20,7 +19,12 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Arrays;
+
 
 // Service for generating and validating JWE (JSON Web Encryption) tokens.
 // Integrates with Redis for token storage and validation.

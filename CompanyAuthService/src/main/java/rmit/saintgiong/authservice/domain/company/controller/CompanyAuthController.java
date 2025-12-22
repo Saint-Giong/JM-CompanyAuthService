@@ -30,6 +30,7 @@ import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @AllArgsConstructor
@@ -47,6 +48,15 @@ public class CompanyAuthController {
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     private final CompanyAuthMapper companyAuthMapper;
+
+        @Value("${jwe.access-token-ttl-seconds:300}")
+        private long accessTokenTtlSeconds;
+
+        @Value("${jwe.refresh-token-ttl-seconds}")
+        private int refreshTokenTtlSeconds;
+
+        @Value("${jwe.register-token-ttl-seconds}")
+        private int registerTokenTtlSeconds;
 
     /**
      * Registers a new company account
@@ -136,7 +146,7 @@ public class CompanyAuthController {
             authCookie.setHttpOnly(true);
             authCookie.setSecure(true); //TODO: change to true when deployed with HTTPS
             authCookie.setPath("/");
-            authCookie.setMaxAge(900);
+            authCookie.setMaxAge(accessTokenTtlSeconds);
             response.addCookie(authCookie);
 
             // set a refresh token in HttpOnly cookie
@@ -144,7 +154,7 @@ public class CompanyAuthController {
             refreshCookie.setHttpOnly(true);
             refreshCookie.setSecure(true); //TODO: change to true when deployed with HTTPS
             refreshCookie.setPath("/");
-            refreshCookie.setMaxAge(604800);
+            refreshCookie.setMaxAge(refreshTokenTtlSeconds);
             response.addCookie(refreshCookie);
 
             CompanyLoginResponseDto companyLoginResponseDto = companyAuthMapper.fromLoginServiceDto(loginResponse);
@@ -309,7 +319,7 @@ public class CompanyAuthController {
             authCookie.setHttpOnly(true);
             authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
             authCookie.setPath("/");
-            authCookie.setMaxAge(900);
+            authCookie.setMaxAge(accessTokenTtlSeconds);
             response.addCookie(authCookie);
 
             // Set new refresh token in HttpOnly cookie (token rotation)
@@ -317,7 +327,7 @@ public class CompanyAuthController {
             refreshCookie.setHttpOnly(true);
             refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
             refreshCookie.setPath("/");
-            refreshCookie.setMaxAge(604800);
+            refreshCookie.setMaxAge(refreshTokenTtlSeconds);
             response.addCookie(refreshCookie);
 
             return ResponseEntity.ok(
@@ -408,7 +418,7 @@ public class CompanyAuthController {
                 authCookie.setHttpOnly(true);
                 authCookie.setSecure(true); //TODO: change to true when deployed with HTTPS
                 authCookie.setPath("/");
-                authCookie.setMaxAge((int) tokenPairDto.getAccessTokenExpiresIn());
+                        authCookie.setMaxAge(accessTokenTtlSeconds);
                 response.addCookie(authCookie);
 
                 // set a refresh token in HttpOnly cookie
@@ -417,7 +427,7 @@ public class CompanyAuthController {
                     refreshCookie.setHttpOnly(true);
                     refreshCookie.setSecure(true); //TODO: change to true when deployed with HTTPS
                     refreshCookie.setPath("/");
-                    refreshCookie.setMaxAge((int) tokenPairDto.getRefreshTokenExpiresIn());
+                    refreshCookie.setMaxAge(refreshTokenTtlSeconds);
                     response.addCookie(refreshCookie);
                 }
 
@@ -431,7 +441,7 @@ public class CompanyAuthController {
                 temp.setHttpOnly(true);
                 temp.setSecure(true);  //TODO: change to true when deployed with HTTPS
                 temp.setPath("/");
-                temp.setMaxAge((int) oauthResponseDto.getRegisterTokenExpiresIn());
+                        temp.setMaxAge(registerTokenTtlSeconds);
                 response.addCookie(temp);
 
                 GoogleRegistrationPrefillDto prefillDto = new GoogleRegistrationPrefillDto(oauthResponseDto.getEmail(), oauthResponseDto.getName());
