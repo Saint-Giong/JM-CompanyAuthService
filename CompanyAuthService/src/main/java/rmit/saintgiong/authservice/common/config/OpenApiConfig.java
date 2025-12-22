@@ -18,8 +18,8 @@ import java.util.List;
 @Configuration
 public class OpenApiConfig {
 
-    @Value("${server.port:8080}")
-    private String serverPort;
+//    @Value("${server.port:8080}") should follow docker port mapping
+    private String serverPort = "8180";
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -37,7 +37,7 @@ public class OpenApiConfig {
                                 .url("https://opensource.org/licenses/MIT")))
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:" + 8180)
+                                .url("http://localhost:" + serverPort)
                                 .description("Local Development Server")))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()

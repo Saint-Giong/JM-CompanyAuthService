@@ -387,8 +387,7 @@ public class JweTokenService {
         Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
         Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
-        log.info("Token expiration: {}", exp);
-        log.info("Current time: {}", Instant.now().getEpochSecond());
+
         if (exp != null) {
             long now = Instant.now().getEpochSecond();
             if (now > exp.longValue()) {
