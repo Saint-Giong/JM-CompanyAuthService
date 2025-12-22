@@ -50,9 +50,6 @@ public class CompanyAuthController {
 
     /**
      * Registers a new company account
-     *
-     * @param registrationDto the company registration details containing email, password,
-     *                        and other required information
      * @return a {@link Callable} that returns a {@link ResponseEntity} containing
      * the registration response with company ID, email, and success status
      */
