@@ -41,7 +41,6 @@ public class CompanyRegistrationRequestDto {
     @Schema(description = "Country", example = "Vietnam")
     private String country;
 
-    @NotBlank(message = "Phone number is required")
     @Pattern(
             regexp = "^\\+\\d{1,3}\\d{1,12}$",
             message = "Phone number must start with '+' followed by 1-3 digit country code and 1-12 digits"
@@ -49,11 +48,9 @@ public class CompanyRegistrationRequestDto {
     @Schema(description = "Company phone number", example = "+84905151667")
     private String phoneNumber;
 
-    @NotBlank(message = "City is required")
     @Schema(description = "City", example = "Ho Chi Minh")
     private String city;
 
-    @NotBlank(message = "Address is required")
     @Schema(description = "Company address", example = "Nguyen Van Linh")
     private String address;
 }
