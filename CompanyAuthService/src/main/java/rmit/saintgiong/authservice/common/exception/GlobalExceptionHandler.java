@@ -179,7 +179,7 @@ public class GlobalExceptionHandler {
         // Clear auth_token cookie
         Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, null);
         authCookie.setHttpOnly(true);
-        authCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+        authCookie.setSecure(true);
         authCookie.setPath("/");
         authCookie.setMaxAge(0);
         response.addCookie(authCookie);
@@ -187,7 +187,7 @@ public class GlobalExceptionHandler {
         // Clear refresh_token cookie
         Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, null);
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false); //TODO: change to true when deployed with HTTPS
+        refreshCookie.setSecure(true);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(0);
         response.addCookie(refreshCookie);

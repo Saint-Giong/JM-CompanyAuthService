@@ -11,6 +11,7 @@ import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.type.TokenType;
 import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.TokenExpiredException;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 import rmit.saintgiong.authservice.common.exception.TokenReuseException;
@@ -38,17 +39,7 @@ public class JweTokenService {
     @Value("${jwe.private-key-path}")
     private String privateKeyPath;
 
-    @Value("${jwe.issuer}")
-    private String issuer;
-
-    @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
-    private long registerTokenTtlSeconds;
-
-    @Value("${jwe.access-token-ttl-seconds:900}")  // Default: 15 minutes
-    private long accessTokenTtlSeconds;
-
-    @Value("${jwe.refresh-token-ttl-seconds:604800}")  // Default: 7 days
-    private long refreshTokenTtlSeconds;
+    private final JweConfig jweConfig;
 
     private RSAPublicKey publicKey;
     private RSAPrivateKey privateKey;
@@ -56,9 +47,10 @@ public class JweTokenService {
     private final RsaKeyLoader keyLoader;
     private final TokenStorageService tokenStorageService;
 
-    public JweTokenService(RsaKeyLoader keyLoader, TokenStorageService tokenStorageService) {
+    public JweTokenService(RsaKeyLoader keyLoader, TokenStorageService tokenStorageService, JweConfig jweConfig) {
         this.keyLoader = keyLoader;
         this.tokenStorageService = tokenStorageService;
+        this.jweConfig = jweConfig;
     }
 
     @PostConstruct
@@ -66,9 +58,9 @@ public class JweTokenService {
         this.publicKey = keyLoader.loadPublicKey();
         this.privateKey = keyLoader.loadPrivateKey();
 
-        log.info("JWE Token Service initialized with issuer: {}", issuer);
+        log.info("JWE Token Service initialized with issuer: {}", jweConfig.getIssuer());
         log.info("Access token TTL: {} seconds, Refresh token TTL: {} seconds",
-                accessTokenTtlSeconds, refreshTokenTtlSeconds);
+                jweConfig.getAccessTokenTtlSeconds(), jweConfig.getRefreshTokenTtlSeconds());
     }
 
     /**
@@ -88,12 +80,12 @@ public class JweTokenService {
             String accessTokenId = UUID.randomUUID().toString();
             String refreshTokenId = UUID.randomUUID().toString();
 
-            String accessToken = generateToken(userId, email, role, TokenType.ACCESS, accessTokenTtlSeconds, accessTokenId);
+            String accessToken = generateToken(userId, email, role, TokenType.ACCESS, jweConfig.getAccessTokenTtlSeconds(), accessTokenId);
             String refreshToken = "";
 
             // Only generate refresh token if user is activated
             if (isActivated) {
-                refreshToken = generateToken(userId, email, role, TokenType.REFRESH, refreshTokenTtlSeconds, refreshTokenId);
+                refreshToken = generateToken(userId, email, role, TokenType.REFRESH, jweConfig.getRefreshTokenTtlSeconds(), refreshTokenId);
 
                 // Only store refresh token in Redis (whitelist approach)
                 // Access token is verified via JWE decryption + blocklist check
@@ -106,8 +98,8 @@ public class JweTokenService {
             return TokenPairDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
-                    .accessTokenExpiresIn(accessTokenTtlSeconds)
-                    .refreshTokenExpiresIn(refreshTokenTtlSeconds)
+                    .accessTokenExpiresIn(jweConfig.getAccessTokenTtlSeconds())
+                    .refreshTokenExpiresIn(jweConfig.getRefreshTokenTtlSeconds())
                     .build();
         } catch (JOSEException e) {
             log.error("Failed to generate token pair for user: {}", userId, e);
@@ -159,7 +151,7 @@ public class JweTokenService {
                     claims.getEmail(),
                     claims.getRole(),
                     TokenType.ACCESS,
-                    accessTokenTtlSeconds,
+                    jweConfig.getAccessTokenTtlSeconds(),
                     newAccessTokenId
             );
 
@@ -169,7 +161,7 @@ public class JweTokenService {
                     claims.getEmail(),
                     claims.getRole(),
                     TokenType.REFRESH,
-                    refreshTokenTtlSeconds,
+                    jweConfig.getRefreshTokenTtlSeconds(),
                     newRefreshTokenId
             );
 
@@ -180,8 +172,8 @@ public class JweTokenService {
             return TokenPairDto.builder()
                     .accessToken(newAccessToken)
                     .refreshToken(newRefreshToken)
-                    .accessTokenExpiresIn(accessTokenTtlSeconds)
-                    .refreshTokenExpiresIn(refreshTokenTtlSeconds)
+                    .accessTokenExpiresIn(jweConfig.getAccessTokenTtlSeconds())
+                    .refreshTokenExpiresIn(jweConfig.getRefreshTokenTtlSeconds())
                     .build();
         } catch (JOSEException e) {
             log.error("Failed to refresh token for user: {}", claims.getSub(), e);
@@ -225,12 +217,12 @@ public class JweTokenService {
             String tokenId = UUID.randomUUID().toString();
 
             long now = Instant.now().getEpochSecond();
-            long exp = now + registerTokenTtlSeconds;
+            long exp = now + jweConfig.getRegisterTokenTtlSeconds();
 
             JWEHeader header = new JWEHeader
                     .Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
                     .type(JOSEObjectType.JOSE)
-                    .issuer(issuer)
+                    .issuer(jweConfig.getIssuer())
                     .customParam("iat", now)
                     .customParam("exp", exp)
                     .build();
@@ -303,7 +295,7 @@ public class JweTokenService {
         // Build JWE Header
         JWEHeader header = new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
                 .type(JOSEObjectType.JOSE)
-                .issuer(issuer)
+                .issuer(jweConfig.getIssuer())
                 .customParam("iat", now)
                 .customParam("exp", exp)
                 .build();
@@ -395,6 +387,8 @@ public class JweTokenService {
         Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
         Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
+        log.info("Token expiration: {}", exp);
+        log.info("Current time: {}", Instant.now().getEpochSecond());
         if (exp != null) {
             long now = Instant.now().getEpochSecond();
             if (now > exp.longValue()) {
@@ -403,7 +397,7 @@ public class JweTokenService {
         }
 
         String tokenIssuer = jweObject.getHeader().getIssuer();
-        if (tokenIssuer == null || !tokenIssuer.equals(issuer)) {
+        if (tokenIssuer == null || !tokenIssuer.equals(jweConfig.getIssuer())) {
             throw new InvalidTokenException("Invalid token issuer");
         }
 

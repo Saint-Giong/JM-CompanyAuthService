@@ -19,6 +19,7 @@ public class RsaKeyLoader {
     @Value("${PRIVATE_KEY_B64:}")
     private String privateKeyB64Prop;
 
+
     /**
      * Loads an RSA public key from the {@code PUBLIC_KEY_B64} environment variable.
      * The environment variable should contain a Base64-encoded public key.

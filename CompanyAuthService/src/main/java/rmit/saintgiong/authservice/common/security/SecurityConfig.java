@@ -23,6 +23,7 @@ public class SecurityConfig {
                                                 cors -> cors
                                                                 .configurationSource(
                                                                                 corsConfigurationSource()))
+                                .logout(AbstractHttpConfigurer::disable)
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(
                                                                 "/swagger-ui.html",
@@ -44,6 +45,8 @@ public class SecurityConfig {
                                                 .requestMatchers(
                                                                 "/verify-account",
                                                                 "/resend-otp")
+                                                .permitAll()
+                                                .requestMatchers("/logout", "/refresh-token")
                                                 .permitAll()
                                                 .requestMatchers(
                                                                 "/actuator/**")
