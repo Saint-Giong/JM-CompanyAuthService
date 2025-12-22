@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Component
+@Slf4j
 public class GatewayAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(
@@ -24,6 +26,8 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String userId = request.getHeader("X-User-Id");
         String role = request.getHeader("X-User-Role");
+
+        log.info("userId: {}, role: {}", userId, role);
 
         if (userId != null && role != null) {
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
