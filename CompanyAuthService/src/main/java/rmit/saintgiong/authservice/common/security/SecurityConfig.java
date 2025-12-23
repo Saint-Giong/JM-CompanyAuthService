@@ -47,14 +47,15 @@ public class SecurityConfig {
                                 "/api-docs.yaml",
                                 "/v3/api-docs/**"
                         ).permitAll()
-
+                        .requestMatchers(
+                                "/actuator/**"
+                        ).permitAll()
                         .requestMatchers(
                                 "/google/**",
                                 "/register",
                                 "/login",
                                 "/dashboard"
                         ).permitAll()
-
                         .requestMatchers(
                                 "/verify-account",
                                 "/resend-otp"
