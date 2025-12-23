@@ -36,11 +36,9 @@ public class CompanyAuthController {
     private final InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
     private final InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
     private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
-    private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;
 
     private final JweTokenService jweTokenService;
 
-    private static final String TEMP_COOKIE_NAME = "temp_token";
     private static final String AUTH_COOKIE_NAME = "auth_token";
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
 

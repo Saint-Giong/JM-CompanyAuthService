@@ -7,60 +7,73 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import jakarta.annotation.PostConstruct;
+
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
-                                .csrf(AbstractHttpConfigurer::disable)
-                                .cors(
-                                                cors -> cors
-                                                                .configurationSource(
-                                                                                corsConfigurationSource()))
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(
-                                                                "/swagger-ui.html",
-                                                                "/swagger-ui/**",
-                                                                "/api-docs/**",
-                                                                "/api-docs.yaml",
-                                                                "/v3/api-docs/**")
-                                                .permitAll()
-                                                .requestMatchers(
-                                                                "/register",
-                                                                "/login",
-                                                                "/dashboard/**")
-                                                .permitAll()
-                                                .requestMatchers(
-                                                                "/google/redirect-url",
-                                                                "/google/auth",
-                                                                "/google/register")
-                                                .permitAll()
-                                                .requestMatchers(
-                                                                "/verify-account",
-                                                                "/resend-otp")
-                                                .permitAll()
-                                                .requestMatchers(
-                                                                "/actuator/**")
-                                                .permitAll()
+    private final GatewayAuthFilter gatewayAuthFilter;
 
-                                                .anyRequest().authenticated());
+    public SecurityConfig(GatewayAuthFilter gatewayAuthFilter) {
+        this.gatewayAuthFilter = gatewayAuthFilter;
+    }
 
-                return http.build();
-        }
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(
+                        cors -> cors
+                                .configurationSource(
+                                        corsConfigurationSource()))
+                .sessionManagement(
+                        session ->
+                                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/api-docs/**",
+                                "/api-docs.yaml",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/actuator/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/google/**",
+                                "/register",
+                                "/login",
+                                "/dashboard"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/verify-account",
+                                "/resend-otp"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        @Bean
-        public UrlBasedCorsConfigurationSource corsConfigurationSource() {
-                CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(Collections.singletonList("*"));
-                configuration.setAllowedMethods(Collections.singletonList("*"));
-                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                source.registerCorsConfiguration("/**", configuration);
-                return source;
-        }
+        return http.build();
+    }
+
+    @Bean
+    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList("*"));
+        configuration.setAllowedMethods(Collections.singletonList("*"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }
