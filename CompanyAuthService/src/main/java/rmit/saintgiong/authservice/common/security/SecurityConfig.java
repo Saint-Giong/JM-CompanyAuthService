@@ -8,10 +8,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import rmit.saintgiong.authapi.internal.type.Role;
+
+import jakarta.annotation.PostConstruct;
+
 
 @Configuration
 @EnableWebSecurity
@@ -54,10 +58,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/verify-account",
                                 "/resend-otp"
-                        ).hasRole(String.valueOf(Role.COMPANY))
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(gatewayAuthFilter, GatewayAuthFilter.class);
+                .addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

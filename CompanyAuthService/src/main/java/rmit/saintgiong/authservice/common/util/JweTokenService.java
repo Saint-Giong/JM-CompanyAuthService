@@ -26,13 +26,6 @@ import java.util.*;
 @Service
 @Slf4j
 public class JweTokenService {
-
-    @Value("${jwe.public-key-path}")
-    private String publicKeyPath;
-
-    @Value("${jwe.private-key-path}")
-    private String privateKeyPath;
-
     @Value("${jwe.issuer}")
     private String issuer;
 
