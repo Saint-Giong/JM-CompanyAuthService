@@ -5,4 +5,5 @@ import java.util.UUID;
 public interface InternalUpdateCompanyAuthInterface {
      void verifyOtpAndActivateAccount(UUID companyId, String otp);
      void resendOtp(UUID companyId);
+     void logout(String accessToken, String refreshToken);
 }

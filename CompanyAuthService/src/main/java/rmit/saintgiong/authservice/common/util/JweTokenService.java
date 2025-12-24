@@ -6,26 +6,40 @@ import com.nimbusds.jose.crypto.RSAEncrypter;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.type.TokenType;
 import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.TokenExpiredException;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
+import rmit.saintgiong.authservice.common.exception.TokenReuseException;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Arrays;
+
 
 // Service for generating and validating JWE (JSON Web Encryption) tokens.
 // Integrates with Redis for token storage and validation.
 @Service
 @Slf4j
 public class JweTokenService {
+
+    @Value("${jwe.public-key-path}")
+    private String publicKeyPath;
+
+    @Value("${jwe.private-key-path}")
+    private String privateKeyPath;
+
+    private final JweConfig jweConfig;
     @Value("${jwe.issuer}")
     private String issuer;
 
@@ -44,9 +58,10 @@ public class JweTokenService {
     private final RsaKeyLoader keyLoader;
     private final TokenStorageService tokenStorageService;
 
-    public JweTokenService(RsaKeyLoader keyLoader, TokenStorageService tokenStorageService) {
+    public JweTokenService(RsaKeyLoader keyLoader, TokenStorageService tokenStorageService, JweConfig jweConfig) {
         this.keyLoader = keyLoader;
         this.tokenStorageService = tokenStorageService;
+        this.jweConfig = jweConfig;
     }
 
     @PostConstruct
@@ -54,9 +69,9 @@ public class JweTokenService {
         this.publicKey = keyLoader.loadPublicKey();
         this.privateKey = keyLoader.loadPrivateKey();
 
-        log.info("JWE Token Service initialized with issuer: {}", issuer);
+        log.info("JWE Token Service initialized with issuer: {}", jweConfig.getIssuer());
         log.info("Access token TTL: {} seconds, Refresh token TTL: {} seconds",
-                accessTokenTtlSeconds, refreshTokenTtlSeconds);
+                jweConfig.getAccessTokenTtlSeconds(), jweConfig.getRefreshTokenTtlSeconds());
     }
 
     /**
@@ -67,6 +82,7 @@ public class JweTokenService {
      * @param userId The user/company ID
      * @param email  The user email
      * @param role   The user role
+     * @param isActivated Whether the user is activated or not.
      * @return TokenPairDto containing both tokens and their expiration info
      */
     public TokenPairDto generateTokenPair(UUID userId, String email, Role role, Boolean isActivated) {
@@ -75,12 +91,12 @@ public class JweTokenService {
             String accessTokenId = UUID.randomUUID().toString();
             String refreshTokenId = UUID.randomUUID().toString();
 
-            String accessToken = generateToken(userId, email, role, TokenType.ACCESS, accessTokenTtlSeconds, accessTokenId);
+            String accessToken = generateToken(userId, email, role, TokenType.ACCESS, jweConfig.getAccessTokenTtlSeconds(), accessTokenId);
             String refreshToken = "";
 
             // Only generate refresh token if user is activated
             if (isActivated) {
-                refreshToken = generateToken(userId, email, role, TokenType.REFRESH, refreshTokenTtlSeconds, refreshTokenId);
+                refreshToken = generateToken(userId, email, role, TokenType.REFRESH, jweConfig.getRefreshTokenTtlSeconds(), refreshTokenId);
 
                 // Only store refresh token in Redis (whitelist approach)
                 // Access token is verified via JWE decryption + blocklist check
@@ -93,8 +109,8 @@ public class JweTokenService {
             return TokenPairDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
-                    .accessTokenExpiresIn(accessTokenTtlSeconds)
-                    .refreshTokenExpiresIn(refreshTokenTtlSeconds)
+                    .accessTokenExpiresIn(jweConfig.getAccessTokenTtlSeconds())
+                    .refreshTokenExpiresIn(jweConfig.getRefreshTokenTtlSeconds())
                     .build();
         } catch (JOSEException e) {
             log.error("Failed to generate token pair for user: {}", userId, e);
@@ -102,9 +118,12 @@ public class JweTokenService {
         }
     }
 
+
     /**
      * Refreshes an access token using a valid refresh token.
-     * The old refresh token is revoked and new tokens are generated.
+     * Old refresh token is revoked and new tokens are generated.
+     * Implements token reuse detection - if a previously used token is detected,
+     * all user sessions are invalidated as a security measure.
      *
      * @param refreshToken The refresh token
      * @return New TokenPairDto with fresh access token and rotated refresh token
@@ -117,8 +136,18 @@ public class JweTokenService {
             throw new InvalidTokenException("Invalid token type: expected REFRESH token");
         }
 
-        // Verify token exists in Redis (not revoked)
         String oldRefreshTokenId = claims.getJti();
+
+        // Check for token reuse (security measure)
+        if (tokenStorageService.isRefreshTokenUsed(oldRefreshTokenId)) {
+            // Token was previously used - possible token theft!
+            // Revoke all user tokens as a security measure
+            log.warn("Refresh token reuse detected for user {}. Revoking all sessions.", claims.getSub());
+            tokenStorageService.revokeAllUserRefreshTokens(claims.getSub());
+            throw new TokenReuseException("Refresh token has already been used. All sessions have been invalidated for security.");
+        }
+
+        // Verify token exists in Redis (not revoked)
         if (!tokenStorageService.isRefreshTokenValid(oldRefreshTokenId)) {
             throw new InvalidTokenException("Refresh token has been revoked or expired");
         }
@@ -133,7 +162,7 @@ public class JweTokenService {
                     claims.getEmail(),
                     claims.getRole(),
                     TokenType.ACCESS,
-                    accessTokenTtlSeconds,
+                    jweConfig.getAccessTokenTtlSeconds(),
                     newAccessTokenId
             );
 
@@ -143,7 +172,7 @@ public class JweTokenService {
                     claims.getEmail(),
                     claims.getRole(),
                     TokenType.REFRESH,
-                    refreshTokenTtlSeconds,
+                    jweConfig.getRefreshTokenTtlSeconds(),
                     newRefreshTokenId
             );
 
@@ -154,8 +183,8 @@ public class JweTokenService {
             return TokenPairDto.builder()
                     .accessToken(newAccessToken)
                     .refreshToken(newRefreshToken)
-                    .accessTokenExpiresIn(accessTokenTtlSeconds)
-                    .refreshTokenExpiresIn(refreshTokenTtlSeconds)
+                    .accessTokenExpiresIn(jweConfig.getAccessTokenTtlSeconds())
+                    .refreshTokenExpiresIn(jweConfig.getRefreshTokenTtlSeconds())
                     .build();
         } catch (JOSEException e) {
             log.error("Failed to refresh token for user: {}", claims.getSub(), e);
@@ -199,12 +228,12 @@ public class JweTokenService {
             String tokenId = UUID.randomUUID().toString();
 
             long now = Instant.now().getEpochSecond();
-            long exp = now + registerTokenTtlSeconds;
+            long exp = now + jweConfig.getRegisterTokenTtlSeconds();
 
             JWEHeader header = new JWEHeader
                     .Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
                     .type(JOSEObjectType.JOSE)
-                    .issuer(issuer)
+                    .issuer(jweConfig.getIssuer())
                     .customParam("iat", now)
                     .customParam("exp", exp)
                     .build();
@@ -277,7 +306,7 @@ public class JweTokenService {
         // Build JWE Header
         JWEHeader header = new JWEHeader.Builder(JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM)
                 .type(JOSEObjectType.JOSE)
-                .issuer(issuer)
+                .issuer(jweConfig.getIssuer())
                 .customParam("iat", now)
                 .customParam("exp", exp)
                 .build();
@@ -297,6 +326,41 @@ public class JweTokenService {
         jweObject.encrypt(new RSAEncrypter(publicKey));
 
         return jweObject.serialize();
+    }
+
+    /**
+     * Revokes both access and refresh tokens during logout.
+     * Adds access token to blocklist and removes refresh token from whitelist.
+     *
+     * @param accessToken  The access token to revoke
+     * @param refreshToken The refresh token to revoke (can be null)
+     */
+    public void revokeTokens(String accessToken, String refreshToken) {
+        // Revoke access token by adding to blocklist
+        if (accessToken != null && !accessToken.isEmpty()) {
+            try {
+                TokenClaimsDto accessClaims = buildTokenClaimsDto(accessToken);
+                long now = Instant.now().getEpochSecond();
+                long remainingTtl = accessClaims.getExp() - now;
+                tokenStorageService.blockAccessToken(accessClaims.getJti(), remainingTtl);
+                log.debug("Access token blocked for user {}", accessClaims.getSub());
+            } catch (Exception e) {
+                // Token might be expired or invalid, ignore
+                log.debug("Could not block access token: {}", e.getMessage());
+            }
+        }
+
+        // Revoke refresh token by removing from whitelist
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            try {
+                TokenClaimsDto refreshClaims = buildTokenClaimsDto(refreshToken);
+                tokenStorageService.revokeRefreshToken(refreshClaims.getJti());
+                log.debug("Refresh token revoked for user {}", refreshClaims.getSub());
+            } catch (Exception e) {
+                // Token might be expired or invalid, ignore
+                log.debug("Could not revoke refresh token: {}", e.getMessage());
+            }
+        }
     }
 
     // Decrypts and validates a JWE token.
@@ -334,6 +398,7 @@ public class JweTokenService {
         Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
         Number exp = (Number) jweObject.getHeader().getCustomParam("exp");
+
         if (exp != null) {
             long now = Instant.now().getEpochSecond();
             if (now > exp.longValue()) {
@@ -342,7 +407,7 @@ public class JweTokenService {
         }
 
         String tokenIssuer = jweObject.getHeader().getIssuer();
-        if (tokenIssuer == null || !tokenIssuer.equals(issuer)) {
+        if (tokenIssuer == null || !tokenIssuer.equals(jweConfig.getIssuer())) {
             throw new InvalidTokenException("Invalid token issuer");
         }
 

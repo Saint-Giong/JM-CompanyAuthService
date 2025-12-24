@@ -56,7 +56,7 @@ public class GoogleOAuthController {
             if (tokenPairDto != null) {
                 Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenPairDto.getAccessToken());
                 authCookie.setHttpOnly(true);
-                authCookie.setSecure(true); //TODO: change to true when deployed with HTTPS
+                authCookie.setSecure(true);
                 authCookie.setPath("/");
                 authCookie.setMaxAge((int) tokenPairDto.getAccessTokenExpiresIn());
                 response.addCookie(authCookie);
@@ -65,7 +65,7 @@ public class GoogleOAuthController {
                 if (tokenPairDto.getRefreshToken() != null && !tokenPairDto.getRefreshToken().isEmpty()) {
                     Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenPairDto.getRefreshToken());
                     refreshCookie.setHttpOnly(true);
-                    refreshCookie.setSecure(true); //TODO: change to true when deployed with HTTPS
+                    refreshCookie.setSecure(true);
                     refreshCookie.setPath("/");
                     refreshCookie.setMaxAge((int) tokenPairDto.getRefreshTokenExpiresIn());
                     response.addCookie(refreshCookie);
@@ -79,7 +79,7 @@ public class GoogleOAuthController {
             if (oauthResponseDto.getRegisterToken() != null) {
                 Cookie temp = new Cookie(TEMP_COOKIE_NAME, oauthResponseDto.getRegisterToken());
                 temp.setHttpOnly(true);
-                temp.setSecure(true);  //TODO: change to true when deployed with HTTPS
+                temp.setSecure(true);
                 temp.setPath("/");
                 temp.setMaxAge((int) oauthResponseDto.getRegisterTokenExpiresIn());
                 response.addCookie(temp);
@@ -109,7 +109,7 @@ public class GoogleOAuthController {
             Cookie tempTokenCookie = new Cookie(TEMP_COOKIE_NAME, "");
             tempTokenCookie.setPath("/");
             tempTokenCookie.setHttpOnly(true);
-            tempTokenCookie.setSecure(true); // TODO: change to true when deployed with HTTPS
+            tempTokenCookie.setSecure(true);
             tempTokenCookie.setMaxAge(0);
             response.addCookie(tempTokenCookie);
 

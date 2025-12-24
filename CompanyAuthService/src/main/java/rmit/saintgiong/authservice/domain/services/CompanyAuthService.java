@@ -23,10 +23,15 @@ import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.dto.avro.ProfileRegistrationResponseRecord;
 import rmit.saintgiong.authapi.internal.dto.avro.ProfileRegistrationSentRecord;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import rmit.saintgiong.authapi.internal.dto.*;
+import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.type.KafkaTopic;
+import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.InvalidCredentialsException;
@@ -43,8 +48,7 @@ import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 @Service
 @AllArgsConstructor
 @Slf4j
-public class CompanyAuthService implements InternalCreateCompanyAuthInterface, InternalGetCompanyAuthInterface,
-        InternalUpdateCompanyAuthInterface {
+public class CompanyAuthService implements InternalCreateCompanyAuthInterface, InternalGetCompanyAuthInterface, InternalUpdateCompanyAuthInterface {
 
     private final CompanyAuthMapper companyAuthMapper;
     private final CompanyAuthRepository companyAuthRepository;
@@ -296,6 +300,52 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
         emailService.sendOtpEmail(companyAuth.getEmail(), companyAuth.getEmail(), otp);
 
         log.info("OTP resent to company: {}", companyAuth.getEmail());
+    }
+
+
+
+    /**
+     * Validates access token and returns the company ID.
+     *
+     * @param accessToken the access token to validate
+     * @return the company ID extracted from the token
+     */
+    @Override
+    public UUID validateAccessTokenAndGetCompanyId(String accessToken) {
+        TokenClaimsDto claims = jweTokenService.validateAccessToken(accessToken);
+        return claims.getSub();
+    }
+
+    /**
+     * Refreshes the token pair using a valid refresh token.
+     *
+     * @param refreshToken the refresh token
+     * @return LoginServiceDto containing new access and refresh tokens
+     */
+    @Override
+    public LoginServiceDto refreshTokenPair(String refreshToken) {
+        TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
+
+        return LoginServiceDto.builder()
+                .success(true)
+                .isActivated(true)
+                .message("Token refreshed successfully.")
+                .accessToken(tokenPair.getAccessToken())
+                .refreshToken(tokenPair.getRefreshToken())
+                .build();
+    }
+
+    /**
+     * Logs out the user by revoking their authentication tokens.
+     * Access token is added to blocklist, refresh token is removed from whitelist.
+     *
+     * @param accessToken  The access token to revoke
+     * @param refreshToken The refresh token to revoke
+     */
+    @Override
+    public void logout(String accessToken, String refreshToken) {
+        jweTokenService.revokeTokens(accessToken, refreshToken);
+        log.info("User logged out successfully");
     }
 
 }

@@ -112,6 +112,7 @@ class GoogleOAuthServiceTest {
         assertNull(result.getName());
     }
 
+
     private GoogleIdToken.Payload payload(String sub, String email, boolean verified, String name) {
         GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
         payload.setSubject(sub);

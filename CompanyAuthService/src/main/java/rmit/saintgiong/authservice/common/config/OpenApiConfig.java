@@ -18,8 +18,8 @@ import java.util.List;
 @Configuration
 public class OpenApiConfig {
 
-    @Value("${server.port:8080}")
-    private String serverPort;
+//    @Value("${server.port:8080}") should follow docker port mapping
+    private String serverPort = "8180";
 
     @Bean
     public OpenAPI customOpenAPI() {

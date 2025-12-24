@@ -23,6 +23,7 @@ public class TokenStorageService {
     private static final String ACCESS_TOKEN_BLOCKLIST_PREFIX = "blocklist:access:";
     private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
     private static final String USER_REFRESH_TOKENS_PREFIX = "user_tokens:refresh:";
+    private static final String USED_REFRESH_TOKEN_PREFIX = "used_refresh_token:";
 
     @Value("${jwe.access-token-ttl-seconds:900}")
     private long accessTokenTtlSeconds;
@@ -95,13 +96,54 @@ public class TokenStorageService {
     }
 
     /**
-     * Revokes a refresh token by removing it from Redis.
+     * Revokes a refresh token by removing it from Redis and marking it as used.
      *
      * @param tokenId The token ID to revoke
      */
     public void revokeRefreshToken(String tokenId) {
         String key = REFRESH_TOKEN_PREFIX + tokenId;
         redisTemplate.delete(key);
-        log.debug("Revoked refresh token {}", tokenId);
+        
+        // Mark token as used for reuse detection
+        String usedKey = USED_REFRESH_TOKEN_PREFIX + tokenId;
+        redisTemplate.opsForValue().set(usedKey, "used", refreshTokenTtlSeconds, TimeUnit.SECONDS);
+        
+        log.debug("Revoked refresh token {} and marked as used", tokenId);
+    }
+
+    /**
+     * Checks if a refresh token has been previously used (reuse detection).
+     *
+     * @param tokenId The token ID to check
+     * @return true if the token was previously used, false otherwise
+     */
+    public boolean isRefreshTokenUsed(String tokenId) {
+        String usedKey = USED_REFRESH_TOKEN_PREFIX + tokenId;
+        Boolean exists = redisTemplate.hasKey(usedKey);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    /**
+     * Revokes all refresh tokens for a user (used when token reuse is detected).
+     * This invalidates all sessions for the user as a security measure.
+     *
+     * @param userId The user ID whose tokens should be revoked
+     */
+    public void revokeAllUserRefreshTokens(UUID userId) {
+        String userTokensKey = USER_REFRESH_TOKENS_PREFIX + userId;
+        java.util.Set<String> tokenIds = redisTemplate.opsForSet().members(userTokensKey);
+        
+        if (tokenIds != null && !tokenIds.isEmpty()) {
+            for (String tokenId : tokenIds) {
+                String key = REFRESH_TOKEN_PREFIX + tokenId;
+                redisTemplate.delete(key);
+                
+                // Mark as used for reuse detection
+                String usedKey = USED_REFRESH_TOKEN_PREFIX + tokenId;
+                redisTemplate.opsForValue().set(usedKey, "used", refreshTokenTtlSeconds, TimeUnit.SECONDS);
+            }
+            redisTemplate.delete(userTokensKey);
+            log.info("Revoked all {} refresh tokens for user {}", tokenIds.size(), userId);
+        }
     }
 }
