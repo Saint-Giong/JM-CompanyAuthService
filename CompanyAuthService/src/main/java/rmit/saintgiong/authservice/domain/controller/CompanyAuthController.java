@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.controller;
+package rmit.saintgiong.authservice.domain.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,13 +17,12 @@ import rmit.saintgiong.authapi.internal.dto.*;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.google_oauth.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
-import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
+import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;

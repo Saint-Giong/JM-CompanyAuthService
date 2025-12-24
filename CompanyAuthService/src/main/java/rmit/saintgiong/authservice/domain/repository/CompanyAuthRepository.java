@@ -1,8 +1,8 @@
-package rmit.saintgiong.authservice.domain.company.repository;
+package rmit.saintgiong.authservice.domain.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
+import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 
 import java.util.Optional;
 import java.util.UUID;

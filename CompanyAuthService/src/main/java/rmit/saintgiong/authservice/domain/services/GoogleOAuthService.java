@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.services.google_oauth;
+package rmit.saintgiong.authservice.domain.services;
 
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
@@ -19,8 +19,8 @@ import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
-import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
-import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
+import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
+import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 
 import java.io.IOException;
 import java.net.URLDecoder;
