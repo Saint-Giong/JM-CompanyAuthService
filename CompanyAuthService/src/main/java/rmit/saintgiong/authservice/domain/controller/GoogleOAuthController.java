@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.controller;
+package rmit.saintgiong.authservice.domain.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
 @RestController
 @AllArgsConstructor
 @Tag(name = "Google OAuth Authentication", description = "APIs for Google Registration, Login and Verify OAuth code")
-public class GoogleAuthController {
+public class GoogleOAuthController {
 
     private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
     private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;

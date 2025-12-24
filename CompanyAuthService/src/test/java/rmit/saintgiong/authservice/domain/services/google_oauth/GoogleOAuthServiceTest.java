@@ -1,5 +1,5 @@
 // java
-package rmit.saintgiong.authservice.domain.company.services.google_oauth;
+package rmit.saintgiong.authservice.domain.services.google_oauth;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,14 +15,11 @@ import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterfa
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
-import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
-import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
+import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
+import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
+import rmit.saintgiong.authservice.domain.services.GoogleOAuthService;
 
-import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;

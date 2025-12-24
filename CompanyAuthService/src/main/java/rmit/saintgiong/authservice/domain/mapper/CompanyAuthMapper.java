@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.mapper;
+package rmit.saintgiong.authservice.domain.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -6,8 +6,8 @@ import rmit.saintgiong.authapi.internal.dto.CompanyLoginResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
-import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
-import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
+import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
+import rmit.saintgiong.authservice.domain.model.CompanyAuth;
 @Mapper(componentModel = "spring")
 public interface CompanyAuthMapper {
 

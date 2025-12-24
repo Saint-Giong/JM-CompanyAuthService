@@ -40,6 +40,17 @@ public class JweTokenService {
     private String privateKeyPath;
 
     private final JweConfig jweConfig;
+    @Value("${jwe.issuer}")
+    private String issuer;
+
+    @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
+    private long registerTokenTtlSeconds;
+
+    @Value("${jwe.access-token-ttl-seconds:900}")  // Default: 15 minutes
+    private long accessTokenTtlSeconds;
+
+    @Value("${jwe.refresh-token-ttl-seconds:604800}")  // Default: 7 days
+    private long refreshTokenTtlSeconds;
 
     private RSAPublicKey publicKey;
     private RSAPrivateKey privateKey;

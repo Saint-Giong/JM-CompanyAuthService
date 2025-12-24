@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.services;
+package rmit.saintgiong.authservice.domain.services;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -40,10 +40,10 @@ import rmit.saintgiong.authservice.common.exception.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.util.EmailService;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.common.util.OtpService;
-import rmit.saintgiong.authservice.domain.company.entity.CompanyAuthEntity;
-import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
-import rmit.saintgiong.authservice.domain.company.model.CompanyAuth;
-import rmit.saintgiong.authservice.domain.company.repository.CompanyAuthRepository;
+import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
+import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
+import rmit.saintgiong.authservice.domain.model.CompanyAuth;
+import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 
 @Service
 @AllArgsConstructor
@@ -128,6 +128,8 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
         String otp = otpService.generateOtp(savedAuth.getCompanyId());
         // Send OTP email
         emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), otp);
+
+
 
         return CompanyRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())

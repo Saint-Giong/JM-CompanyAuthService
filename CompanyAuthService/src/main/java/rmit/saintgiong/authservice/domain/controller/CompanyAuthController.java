@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.company.controller;
+package rmit.saintgiong.authservice.domain.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,12 +18,12 @@ import rmit.saintgiong.authapi.internal.dto.*;
 import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.google_oauth.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
-import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
+import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -38,10 +38,8 @@ public class CompanyAuthController {
     private final InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
     private final InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
     private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
-    private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;
 
 
-    private static final String TEMP_COOKIE_NAME = "temp_token";
     private static final String AUTH_COOKIE_NAME = "auth_token";
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
@@ -133,7 +131,7 @@ public class CompanyAuthController {
             // set a short-lived access token in HttpOnly cookie
             Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, loginResponse.getAccessToken());
             authCookie.setHttpOnly(true);
-            authCookie.setSecure(true); 
+            authCookie.setSecure(true);
             authCookie.setPath("/");
             authCookie.setMaxAge(jweConfig.getAccessTokenTtlSeconds());
             response.addCookie(authCookie);
@@ -141,7 +139,7 @@ public class CompanyAuthController {
             // set a refresh token in HttpOnly cookie
             Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, loginResponse.getRefreshToken());
             refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(true); 
+            refreshCookie.setSecure(true);
             refreshCookie.setPath("/");
             refreshCookie.setMaxAge(jweConfig.getRefreshTokenTtlSeconds());
             response.addCookie(refreshCookie);
@@ -306,7 +304,7 @@ public class CompanyAuthController {
             // Set new access token in HttpOnly cookie
             Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenResponse.getAccessToken());
             authCookie.setHttpOnly(true);
-            authCookie.setSecure(true); 
+            authCookie.setSecure(true);
             authCookie.setPath("/");
             authCookie.setMaxAge(jweConfig.getAccessTokenTtlSeconds());
             response.addCookie(authCookie);
@@ -314,7 +312,7 @@ public class CompanyAuthController {
             // Set new refresh token in HttpOnly cookie (token rotation)
             Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenResponse.getRefreshToken());
             refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(true); 
+            refreshCookie.setSecure(true);
             refreshCookie.setPath("/");
             refreshCookie.setMaxAge(jweConfig.getRefreshTokenTtlSeconds());
             response.addCookie(refreshCookie);
@@ -359,7 +357,7 @@ public class CompanyAuthController {
             // Clear auth cookie
             Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, null);
             authCookie.setHttpOnly(true);
-            authCookie.setSecure(true); 
+            authCookie.setSecure(true);
             authCookie.setPath("/");
             authCookie.setMaxAge(0); // Delete cookie immediately
             response.addCookie(authCookie);
@@ -367,7 +365,7 @@ public class CompanyAuthController {
             // Clear refresh cookie
             Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, null);
             refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(true); 
+            refreshCookie.setSecure(true);
             refreshCookie.setPath("/");
             refreshCookie.setMaxAge(0); // Delete cookie immediately
             response.addCookie(refreshCookie);

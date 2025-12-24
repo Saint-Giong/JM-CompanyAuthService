@@ -1,7 +1,6 @@
 package rmit.saintgiong.authapi.internal.service;
 
 import rmit.saintgiong.authapi.internal.dto.CompanyLoginRequestDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyLoginResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 
 import java.util.UUID;
