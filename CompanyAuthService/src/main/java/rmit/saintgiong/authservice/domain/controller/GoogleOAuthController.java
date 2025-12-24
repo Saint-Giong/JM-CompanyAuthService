@@ -14,9 +14,9 @@ import rmit.saintgiong.authapi.internal.dto.common.GenericResponseDto;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleRegistrationPrefillDto;
-import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.google_oauth.InternalGoogleOAuthInterface;
-import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 
 import java.util.concurrent.Callable;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.Callable;
 @Tag(name = "Google OAuth Authentication", description = "APIs for Google Registration, Login and Verify OAuth code")
 public class GoogleOAuthController {
 
-    private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
+    private final InternalCompanyAuthInterface internalCompanyAuthInterface;
     private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;
 
     private static final String TEMP_COOKIE_NAME = "temp_token";
@@ -104,7 +104,7 @@ public class GoogleOAuthController {
             HttpServletResponse response
     ) {
         return () -> {
-            CompanyRegistrationResponseDto registerResponseDto = internalCreateCompanyAuthInterface.registerCompanyWithGoogleId(requestDto, tempToken);
+            CompanyRegistrationResponseDto registerResponseDto = internalCompanyAuthInterface.registerCompanyWithGoogleId(requestDto, tempToken);
 
             Cookie tempTokenCookie = new Cookie(TEMP_COOKIE_NAME, "");
             tempTokenCookie.setPath("/");

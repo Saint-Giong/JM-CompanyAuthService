@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -15,15 +14,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rmit.saintgiong.authapi.internal.dto.*;
-import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authservice.common.config.JweConfig;
-import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
+import rmit.saintgiong.authservice.domain.services.InternalCompanyAuthService;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -35,21 +31,13 @@ import java.util.concurrent.Callable;
 public class CompanyAuthController {
     private final JweConfig jweConfig;
 
-    private final InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
-    private final InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
-    private final InternalCreateCompanyAuthInterface internalCreateCompanyAuthInterface;
-
+    private final InternalCompanyAuthService internalCompanyAuthService;
 
     private static final String AUTH_COOKIE_NAME = "auth_token";
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     private final CompanyAuthMapper companyAuthMapper;
 
-    /**
-     * Registers a new company account
-     * @return a {@link Callable} that returns a {@link ResponseEntity} containing
-     * the registration response with company ID, email, and success status
-     */
     @Operation(
             summary = "Register a new company",
             description = "Creates a new company account and sends an activation email. " +
@@ -87,17 +75,13 @@ public class CompanyAuthController {
             @Valid @RequestBody CompanyRegistrationRequestDto registrationDto
     ) {
         return () -> {
-            CompanyRegistrationResponseDto response = internalCreateCompanyAuthInterface.registerCompany(registrationDto);
+            CompanyRegistrationResponseDto response = internalCompanyAuthService.registerCompany(registrationDto);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(response);
         };
     }
 
-    /**
-     * Authenticates a company and returns tokens if activated.
-     * If an account is not activated, sends OTP and sets a temporary cookie.
-     */
     @Operation(
             summary = "Company login",
             description = "Authenticates a company with email and password. " +
@@ -126,23 +110,14 @@ public class CompanyAuthController {
             @Valid @RequestBody CompanyLoginRequestDto loginDto,
             HttpServletResponse response) {
         return () -> {
-            LoginServiceDto loginResponse = internalGetCompanyAuthInterface.authenticateWithEmailAndPassword(loginDto);
-
-            // set a short-lived access token in HttpOnly cookie
-            Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, loginResponse.getAccessToken());
-            authCookie.setHttpOnly(true);
-            authCookie.setSecure(true);
-            authCookie.setPath("/");
-            authCookie.setMaxAge(jweConfig.getAccessTokenTtlSeconds());
-            response.addCookie(authCookie);
-
-            // set a refresh token in HttpOnly cookie
-            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, loginResponse.getRefreshToken());
-            refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(true);
-            refreshCookie.setPath("/");
-            refreshCookie.setMaxAge(jweConfig.getRefreshTokenTtlSeconds());
-            response.addCookie(refreshCookie);
+            LoginServiceDto loginResponse = internalCompanyAuthService.authenticateWithEmailAndPassword(loginDto);
+            internalCompanyAuthService.setAuthAndRefreshCookieToBrowser(
+                    response,
+                    loginResponse.getAccessToken(),
+                    loginResponse.getRefreshToken(),
+                    jweConfig.getAccessTokenTtlSeconds(),
+                    jweConfig.getRefreshTokenTtlSeconds()
+            );
 
             CompanyLoginResponseDto companyLoginResponseDto = companyAuthMapper.fromLoginServiceDto(loginResponse);
 
@@ -152,10 +127,7 @@ public class CompanyAuthController {
         };
     }
 
-    /**
-     * Verifies OTP and activates the company account.
-     * The company ID is extracted from the JWE token in the cookie.
-     */
+
     @Operation(
             summary = "Verify OTP and activate account",
             description = "Verifies the OTP sent to the user's email and activates the account. " +
@@ -194,10 +166,10 @@ public class CompanyAuthController {
             }
 
             // Validate and extract company ID from the token via service layer
-            UUID companyId = internalGetCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+            UUID companyId = internalCompanyAuthService.validateAccessTokenAndGetCompanyId(authToken);
 
             // Verify OTP and activate an account
-            internalUpdateCompanyAuthInterface.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
+            internalCompanyAuthService.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
 
             return ResponseEntity.ok(
                     OtpVerificationResponseDto.builder()
@@ -208,10 +180,7 @@ public class CompanyAuthController {
         };
     }
 
-    /**
-     * Resends OTP to the user's email.
-     * The company ID is extracted from the JWE token in the cookie.
-     */
+
     @Operation(
             summary = "Resend OTP",
             description = "Resends a new OTP to the user's email. " +
@@ -246,10 +215,10 @@ public class CompanyAuthController {
             }
             log.info("Resending OTP for company with token:");
             // Validate and extract company ID from the token via service layer
-            UUID companyId = internalGetCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+            UUID companyId = internalCompanyAuthService.validateAccessTokenAndGetCompanyId(authToken);
 
             // Resend OTP
-            internalUpdateCompanyAuthInterface.resendOtp(companyId);
+            internalCompanyAuthService.resendOtp(companyId);
 
             return ResponseEntity.ok(
                     OtpVerificationResponseDto.builder()
@@ -260,11 +229,7 @@ public class CompanyAuthController {
         };
     }
 
-    /**
-     * Refreshes access token using a valid refresh token from cookie.
-     * Implements token rotation - old refresh token is invalidated and a new one is issued.
-     * Detects and prevents token reuse attacks.
-     */
+
     @Operation(
             summary = "Refresh access token",
             description = "Refreshes the access token using a valid refresh token from the cookie. " +
@@ -292,30 +257,22 @@ public class CompanyAuthController {
     @PostMapping("/refresh-token")
     public Callable<ResponseEntity<RefreshTokenResponseDto>> refreshToken(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
-            HttpServletResponse response) {
+            HttpServletResponse response
+    ) {
         return () -> {
             if (refreshToken == null || refreshToken.isEmpty()) {
                 throw new InvalidTokenException("Refresh token not found. Please login first.");
             }
 
             // Refresh the token pair (includes reuse detection)
-            LoginServiceDto tokenResponse = internalGetCompanyAuthInterface.refreshTokenPair(refreshToken);
-
-            // Set new access token in HttpOnly cookie
-            Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenResponse.getAccessToken());
-            authCookie.setHttpOnly(true);
-            authCookie.setSecure(true);
-            authCookie.setPath("/");
-            authCookie.setMaxAge(jweConfig.getAccessTokenTtlSeconds());
-            response.addCookie(authCookie);
-
-            // Set new refresh token in HttpOnly cookie (token rotation)
-            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenResponse.getRefreshToken());
-            refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(true);
-            refreshCookie.setPath("/");
-            refreshCookie.setMaxAge(jweConfig.getRefreshTokenTtlSeconds());
-            response.addCookie(refreshCookie);
+            LoginServiceDto tokenResponse = internalCompanyAuthService.refreshTokenPair(refreshToken);
+            internalCompanyAuthService.setAuthAndRefreshCookieToBrowser(
+                    response,
+                    tokenResponse.getAccessToken(),
+                    tokenResponse.getRefreshToken(),
+                    jweConfig.getAccessTokenTtlSeconds(),
+                    jweConfig.getRefreshTokenTtlSeconds()
+            );
 
             return ResponseEntity.ok(
                     RefreshTokenResponseDto.builder()
@@ -326,10 +283,6 @@ public class CompanyAuthController {
         };
     }
 
-    /**
-     * Logs out the user by revoking their tokens and clearing cookies.
-     * Access token is added to blocklist, refresh token is removed from whitelist.
-     */
     @Operation(
             summary = "Logout",
             description = "Logs out the user by revoking their authentication tokens and clearing cookies. " +
@@ -352,23 +305,8 @@ public class CompanyAuthController {
             HttpServletResponse response) {
         return () -> {
             // Revoke tokens via service layer (blocklist access token, remove refresh token)
-            internalUpdateCompanyAuthInterface.logout(accessToken, refreshToken);
-
-            // Clear auth cookie
-            Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, null);
-            authCookie.setHttpOnly(true);
-            authCookie.setSecure(true);
-            authCookie.setPath("/");
-            authCookie.setMaxAge(0); // Delete cookie immediately
-            response.addCookie(authCookie);
-
-            // Clear refresh cookie
-            Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, null);
-            refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(true);
-            refreshCookie.setPath("/");
-            refreshCookie.setMaxAge(0); // Delete cookie immediately
-            response.addCookie(refreshCookie);
+            internalCompanyAuthService.logout(accessToken, refreshToken);
+            internalCompanyAuthService.setAuthAndRefreshCookieToBrowser(response, accessToken, refreshToken, 0, 0);
 
             return ResponseEntity.ok(
                     LogoutResponseDto.builder()

@@ -11,13 +11,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.type.Role;
-import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
-import rmit.saintgiong.authservice.domain.services.GoogleOAuthService;
+import rmit.saintgiong.authservice.domain.services.InternalCompanyAuthService;
+import rmit.saintgiong.authservice.domain.services.InternalGoogleOAuthService;
 
 import java.util.*;
 
@@ -26,37 +26,37 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class GoogleOAuthServiceTest {
+class InternalGoogleOAuthServiceTest {
 
     @Mock
     private CompanyAuthRepository companyAuthRepository;
     @Mock
-    private InternalCreateCompanyAuthInterface createCompanyAuthInterface;
+    private InternalCompanyAuthService internalCompanyAuthService;
     @Mock
     private JweTokenService jweTokenService;
 
-    private GoogleOAuthService googleOAuthService;
+    private InternalGoogleOAuthService internalGoogleOAuthService;
 
     @BeforeEach
     void setUp() {
-        googleOAuthService = Mockito.spy(new GoogleOAuthService(
+        internalGoogleOAuthService = Mockito.spy(new InternalGoogleOAuthService(
                 companyAuthRepository,
-                createCompanyAuthInterface,
+                internalCompanyAuthService,
                 jweTokenService
         ));
-        ReflectionTestUtils.setField(googleOAuthService, "registerTokenTtlSeconds", 300L);
+        ReflectionTestUtils.setField(internalGoogleOAuthService, "registerTokenTtlSeconds", 300L);
     }
 
     @Test
     void authenticateGoogleUser_returnsRegisterPayload_whenCompanyNotFound() throws Exception {
         String code = "new-user-code";
         GoogleIdToken.Payload payload = payload("google-id", "new@company.com", true, "New User");
-        doReturn(payload).when(googleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+        doReturn(payload).when(internalGoogleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
         when(companyAuthRepository.findByEmail("new@company.com")).thenReturn(Optional.empty());
         when(jweTokenService.generateRegistrationTokenForGoogleAuth("new@company.com", "google-id"))
                 .thenReturn("temp-token");
 
-        GoogleOAuthResponseDto result = googleOAuthService.authenticateGoogleUser(code);
+        GoogleOAuthResponseDto result = internalGoogleOAuthService.authenticateGoogleUser(code);
 
         assertNull(result.getTokenPairDto());
         assertEquals("temp-token", result.getRegisterToken());
@@ -69,13 +69,13 @@ class GoogleOAuthServiceTest {
     void authenticateGoogleUser_throwsConflict_whenEmailExistsWithoutSso() throws Exception {
         String code = "conflict-code";
         GoogleIdToken.Payload payload = payload("google-id", "conflict@company.com", true, "Conflict User");
-        doReturn(payload).when(googleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+        doReturn(payload).when(internalGoogleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
 
         CompanyAuthEntity entity = mock(CompanyAuthEntity.class);
         when(entity.getSsoToken()).thenReturn(null);
         when(companyAuthRepository.findByEmail("conflict@company.com")).thenReturn(Optional.of(entity));
 
-        assertThrows(CompanyAccountAlreadyExisted.class, () -> googleOAuthService.authenticateGoogleUser(code));
+        assertThrows(CompanyAccountAlreadyExisted.class, () -> internalGoogleOAuthService.authenticateGoogleUser(code));
         verify(jweTokenService, never()).generateRegistrationTokenForGoogleAuth(anyString(), anyString());
     }
 
@@ -83,7 +83,7 @@ class GoogleOAuthServiceTest {
     void authenticateGoogleUser_returnsTokenPair_whenCompanyHasSso() throws Exception {
         String code = "login-code";
         GoogleIdToken.Payload payload = payload("google-id", "login@company.com", true, "Login User");
-        doReturn(payload).when(googleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+        doReturn(payload).when(internalGoogleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
 
         UUID companyId = UUID.randomUUID();
         CompanyAuthEntity entity = mock(CompanyAuthEntity.class);
@@ -102,7 +102,7 @@ class GoogleOAuthServiceTest {
         when(jweTokenService.generateTokenPair(companyId, "login@company.com", Role.COMPANY, true))
                 .thenReturn(tokenPairDto);
 
-        GoogleOAuthResponseDto result = googleOAuthService.authenticateGoogleUser(code);
+        GoogleOAuthResponseDto result = internalGoogleOAuthService.authenticateGoogleUser(code);
 
         assertNotNull(result.getTokenPairDto());
         assertEquals("access-token", result.getTokenPairDto().getAccessToken());

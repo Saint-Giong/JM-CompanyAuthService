@@ -7,17 +7,16 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.service.google_oauth.InternalGoogleOAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
-import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
-import rmit.saintgiong.authservice.common.exception.InvalidCredentialsException;
+import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
@@ -30,7 +29,7 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-public class GoogleOAuthService implements InternalGoogleOAuthInterface {
+public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface {
 
     @Value("${OAUTH2_CLIENT_ID}")
     private String clientId;
@@ -38,23 +37,22 @@ public class GoogleOAuthService implements InternalGoogleOAuthInterface {
     @Value("${OAUTH2_CLIENT_SECRET}")
     private String clientSecret;
 
-    @Value("${google.oauth2_redirect_uri:http://localhost:8080/dashboard}")
+    @Value("${google.oauth2_redirect_uri:http://localhost:8180/dashboard}")
     private String redirectLoginUri;
 
     @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
     private long registerTokenTtlSeconds;
 
     private final CompanyAuthRepository companyAuthRepository;
-    private final InternalCreateCompanyAuthInterface createCompanyAuthInterface;
+    private final InternalCompanyAuthInterface internalCompanyAuthInterface;
     private final JweTokenService jweTokenService;
 
     private static final GsonFactory GSON_FACTORY = new GsonFactory().getDefaultInstance();
     private static final NetHttpTransport NET_HTTP_TRANSPORT = new NetHttpTransport();
 
-    @Autowired
-    public GoogleOAuthService(CompanyAuthRepository companyAuthRepository, InternalCreateCompanyAuthInterface createCompanyAuthInterface, JweTokenService jweTokenService) {
+    public InternalGoogleOAuthService(CompanyAuthRepository companyAuthRepository, InternalCompanyAuthInterface internalCompanyAuthInterface, JweTokenService jweTokenService) {
         this.companyAuthRepository = companyAuthRepository;
-        this.createCompanyAuthInterface = createCompanyAuthInterface;
+        this.internalCompanyAuthInterface = internalCompanyAuthInterface;
         this.jweTokenService = jweTokenService;
     }
 

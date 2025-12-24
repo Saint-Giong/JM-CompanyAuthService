@@ -17,16 +17,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
-import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.google_oauth.InternalGoogleOAuthInterface;
-import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.util.EmailService;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.common.util.OtpService;
 import rmit.saintgiong.authservice.common.util.TokenStorageService;
-import rmit.saintgiong.authservice.domain.company.mapper.CompanyAuthMapper;
+import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 
 import java.util.UUID;
 
@@ -50,13 +48,7 @@ class CompanyAuthRegistrationTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private InternalCreateCompanyAuthInterface companyAuthService;
-
-    @MockitoBean
-    private InternalGetCompanyAuthInterface internalGetCompanyAuthInterface;
-
-    @MockitoBean
-    private InternalUpdateCompanyAuthInterface internalUpdateCompanyAuthInterface;
+    private InternalCompanyAuthInterface internalCompanyAuthInterface;
 
     @MockitoBean
     private JweTokenService jweTokenService;
@@ -110,7 +102,7 @@ class CompanyAuthRegistrationTest {
                     .message("Company registered successfully. Please check your email for activation link.")
                     .build();
 
-            when(companyAuthService.registerCompany(any(CompanyRegistrationRequestDto.class)))
+            when(internalCompanyAuthInterface.registerCompany(any(CompanyRegistrationRequestDto.class)))
                     .thenReturn(mockResponse);
 
             // Act & Assert
@@ -127,7 +119,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.message").value("Company registered successfully. Please check your email for activation link."));
 
-            verify(companyAuthService, times(1)).registerCompany(any(CompanyRegistrationRequestDto.class));
+            verify(internalCompanyAuthInterface, times(1)).registerCompany(any(CompanyRegistrationRequestDto.class));
         }
 
     }
@@ -149,7 +141,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.companyName").value("Company name is required"));
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
     }
@@ -172,7 +164,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.email").exists());
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
         @ParameterizedTest
@@ -196,7 +188,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.email").exists());
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
     }
@@ -218,7 +210,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.password").exists());
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
         @Test
@@ -232,7 +224,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.password").exists());
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
         @Test
@@ -246,7 +238,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.password").value("Password must contain at least 1 number, 1 special character, and 1 uppercase letter"));
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
         @Test
@@ -260,7 +252,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.password").value("Password must contain at least 1 number, 1 special character, and 1 uppercase letter"));
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
         @Test
@@ -274,7 +266,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.password").value("Password must contain at least 1 number, 1 special character, and 1 uppercase letter"));
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
 
@@ -297,7 +289,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.country").value("Country is required"));
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
     }
@@ -327,7 +319,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorFields.phoneNumber").value("Phone number must start with '+' followed by 1-3 digit country code and 1-12 digits"));
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
 
     }
@@ -341,7 +333,7 @@ class CompanyAuthRegistrationTest {
         @Test
         @DisplayName("Should fail when email already exists")
         void testRegisterCompany_DuplicateEmail_Fail() throws Exception {
-            when(companyAuthService.registerCompany(any(CompanyRegistrationRequestDto.class)))
+            when(internalCompanyAuthInterface.registerCompany(any(CompanyRegistrationRequestDto.class)))
                     .thenThrow(new CompanyAccountAlreadyExisted("Email already registered"));
 
             MvcResult result = mockMvc.perform(post("/register")
@@ -354,7 +346,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Email already registered"));
 
-            verify(companyAuthService, times(1)).registerCompany(any(CompanyRegistrationRequestDto.class));
+            verify(internalCompanyAuthInterface, times(1)).registerCompany(any(CompanyRegistrationRequestDto.class));
         }
     }
 
@@ -388,7 +380,7 @@ class CompanyAuthRegistrationTest {
                     .andExpect(jsonPath("$.errorFields.country").exists())
                     .andExpect(jsonPath("$.errorFields.phoneNumber").exists());
 
-            verify(companyAuthService, never()).registerCompany(any());
+            verify(internalCompanyAuthInterface, never()).registerCompany(any());
         }
     }
 

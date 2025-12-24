@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.exception;
+package rmit.saintgiong.authservice.common.exception.resources;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

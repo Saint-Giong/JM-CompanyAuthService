@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.exception;
+package rmit.saintgiong.authservice.common.exception.token;
 
 // Exception thrown when a token has expired.
 public class TokenExpiredException extends RuntimeException {

@@ -11,6 +11,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
+import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
+import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
+import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
+import rmit.saintgiong.authservice.common.exception.token.TokenExpiredException;
+import rmit.saintgiong.authservice.common.exception.token.TokenReuseException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;

@@ -12,9 +12,9 @@ import rmit.saintgiong.authapi.internal.type.TokenType;
 import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.config.JweConfig;
-import rmit.saintgiong.authservice.common.exception.TokenExpiredException;
-import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
-import rmit.saintgiong.authservice.common.exception.TokenReuseException;
+import rmit.saintgiong.authservice.common.exception.token.TokenExpiredException;
+import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
+import rmit.saintgiong.authservice.common.exception.token.TokenReuseException;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;

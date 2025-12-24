@@ -4,6 +4,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
@@ -23,20 +25,14 @@ import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.dto.avro.ProfileRegistrationResponseRecord;
 import rmit.saintgiong.authapi.internal.dto.avro.ProfileRegistrationSentRecord;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import rmit.saintgiong.authapi.internal.dto.*;
 import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
-import rmit.saintgiong.authapi.internal.service.InternalCreateCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalGetCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalUpdateCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.type.KafkaTopic;
-import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.type.Role;
-import rmit.saintgiong.authservice.common.exception.CompanyAccountAlreadyExisted;
-import rmit.saintgiong.authservice.common.exception.InvalidCredentialsException;
-import rmit.saintgiong.authservice.common.exception.InvalidTokenException;
-import rmit.saintgiong.authservice.common.exception.ResourceNotFoundException;
+import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
+import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
+import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.util.EmailService;
 import rmit.saintgiong.authservice.common.util.JweTokenService;
 import rmit.saintgiong.authservice.common.util.OtpService;
@@ -48,7 +44,7 @@ import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 @Service
 @AllArgsConstructor
 @Slf4j
-public class CompanyAuthService implements InternalCreateCompanyAuthInterface, InternalGetCompanyAuthInterface, InternalUpdateCompanyAuthInterface {
+public class InternalCompanyAuthService implements InternalCompanyAuthInterface {
 
     private final CompanyAuthMapper companyAuthMapper;
     private final CompanyAuthRepository companyAuthRepository;
@@ -58,16 +54,11 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
     private final OtpService otpService;
     private final JweTokenService jweTokenService;
 
+    private static final String AUTH_COOKIE_NAME = "auth_token";
+    private static final String REFRESH_COOKIE_NAME = "refresh_token";
+
     private ReplyingKafkaTemplate<String, Object, Object> replyingKafkaTemplate;
 
-    /**
-     * Registers a new company with the authentication system.
-     *
-     * @param requestDto the company registration data transfer object containing
-     *                   the email, password, and other registration details
-     * @return a {@link CompanyRegistrationResponseDto} containing the registered
-     *         company's ID, email, success status, and a confirmation message
-     */
     @Override
     @Transactional
     public CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto requestDto) {
@@ -77,17 +68,10 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
             throw new CompanyAccountAlreadyExisted("Email already registered");
         }
 
-        // Convert DTO to model
         CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationDto(requestDto);
-
-        // Encode password in the model
         companyAuth.setHashedPassword(passwordEncoder.encode(requestDto.getPassword()));
 
-        // Convert model to entity and save (isActivated remains false)
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
-
-        // TODO: Add kafka publisher to create profile
-
         ProfileRegistrationSentRecord profileSentRecord = ProfileRegistrationSentRecord.newBuilder()
                 .setCompanyId(savedAuth.getCompanyId())
                 .setCompanyName(requestDto.getCompanyName())
@@ -97,11 +81,14 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
                 .setAddress(Optional.ofNullable(requestDto.getAddress()).orElse(""))
                 .build();
 
-        ProducerRecord<String, Object> request = new ProducerRecord<>(KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
-                profileSentRecord);
+        ProducerRecord<String, Object> request = new ProducerRecord<>(
+                KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
+                profileSentRecord
+        );
         request.headers().add(
                 KafkaHeaders.REPLY_TOPIC,
-                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes());
+                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes()
+        );
 
         try {
             RequestReplyFuture<String, Object, Object> responseRecord = replyingKafkaTemplate.sendAndReceive(request);
@@ -124,12 +111,8 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
             log.error("Error while sending profile registration message for companyId={}", savedAuth.getCompanyId(), e);
         }
 
-        // Generate OTP and store in Redis with 2-minute TTL
         String otp = otpService.generateOtp(savedAuth.getCompanyId());
-        // Send OTP email
         emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), otp);
-
-
 
         return CompanyRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
@@ -142,10 +125,11 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
 
     @Override
     @Transactional
-    public CompanyRegistrationResponseDto registerCompanyWithGoogleId(CompanyRegistrationGoogleRequestDto requestDto,
-            String tempToken) {
-        // Convert DTO to model
-        CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(requestDto);
+    public CompanyRegistrationResponseDto registerCompanyWithGoogleId(
+            CompanyRegistrationGoogleRequestDto googleRequestDto,
+            String tempToken
+    ) {
+        CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(googleRequestDto);
 
         String googleId = jweTokenService.getGoogleIdFromJweToken(tempToken);
         String emailFromToken = jweTokenService.getEmailFromJweString(tempToken);
@@ -153,29 +137,30 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
             throw new InvalidTokenException("Missing either googleId or email in TEMP_COOKIE.");
         }
 
-        if (!emailFromToken.equals(requestDto.getEmail())) {
+        if (!emailFromToken.equals(googleRequestDto.getEmail())) {
             throw new InvalidTokenException("Email in TEMP_COOKIE does not match the registration email.");
         }
 
         companyAuth.setSsoToken(googleId);
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
-
-        // Send Kafka message to create profile in Profile Service
         ProfileRegistrationSentRecord profileSentRecord = ProfileRegistrationSentRecord.newBuilder()
                 .setCompanyId(savedAuth.getCompanyId())
-                .setCompanyName(requestDto.getCompanyName())
-                .setCountry(requestDto.getCountry())
-                .setPhoneNumber(Optional.ofNullable(requestDto.getPhoneNumber()).orElse(""))
-                .setCity(Optional.ofNullable(requestDto.getCity()).orElse(""))
-                .setAddress(Optional.ofNullable(requestDto.getAddress()).orElse(""))
+                .setCompanyName(googleRequestDto.getCompanyName())
+                .setCountry(googleRequestDto.getCountry())
+                .setPhoneNumber(Optional.ofNullable(googleRequestDto.getPhoneNumber()).orElse(""))
+                .setCity(Optional.ofNullable(googleRequestDto.getCity()).orElse(""))
+                .setAddress(Optional.ofNullable(googleRequestDto.getAddress()).orElse(""))
                 .build();
 
-        ProducerRecord<String, Object> request = new ProducerRecord<>(KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
-                profileSentRecord);
+        ProducerRecord<String, Object> request = new ProducerRecord<>(
+                KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
+                profileSentRecord
+        );
         request.headers().add(
                 KafkaHeaders.REPLY_TOPIC,
-                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes());
+                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes()
+        );
 
         try {
             RequestReplyFuture<String, Object, Object> responseRecord = replyingKafkaTemplate.sendAndReceive(request);
@@ -200,7 +185,7 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
         }
 
         String otp = otpService.generateOtp(savedAuth.getCompanyId());
-        emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), otp);
+        emailService.sendOtpEmail(googleRequestDto.getEmail(), googleRequestDto.getCompanyName(), otp);
 
         return CompanyRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
@@ -211,14 +196,6 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
                 .build();
     }
 
-    /**
-     * Authenticates a company with email and password.
-     * If an account is not activated, it generates and sends a new OTP.
-     *
-     * @param loginDto The login credentials
-     * @return CompanyLoginResponseDto with an authentication result and tokens if
-     *         activated
-     */
     @Override
     @Transactional
     public LoginServiceDto authenticateWithEmailAndPassword(CompanyLoginRequestDto loginDto) {
@@ -251,12 +228,6 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
                 .build();
     }
 
-    /**
-     * Verifies the OTP and activates the company account.
-     *
-     * @param companyId The company ID (extracted from JWE token)
-     * @param otp       The OTP provided by the user
-     */
     @Override
     @Transactional
     public void verifyOtpAndActivateAccount(UUID companyId, String otp) {
@@ -276,11 +247,6 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
         log.info("Company account activated successfully for company ID: {}", companyId);
     }
 
-    /**
-     * Resends OTP to the company email.
-     *
-     * @param companyId The company ID
-     */
     @Override
     @Transactional
     public void resendOtp(UUID companyId) {
@@ -302,26 +268,12 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
         log.info("OTP resent to company: {}", companyAuth.getEmail());
     }
 
-
-
-    /**
-     * Validates access token and returns the company ID.
-     *
-     * @param accessToken the access token to validate
-     * @return the company ID extracted from the token
-     */
     @Override
     public UUID validateAccessTokenAndGetCompanyId(String accessToken) {
         TokenClaimsDto claims = jweTokenService.validateAccessToken(accessToken);
         return claims.getSub();
     }
 
-    /**
-     * Refreshes the token pair using a valid refresh token.
-     *
-     * @param refreshToken the refresh token
-     * @return LoginServiceDto containing new access and refresh tokens
-     */
     @Override
     public LoginServiceDto refreshTokenPair(String refreshToken) {
         TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
@@ -335,17 +287,26 @@ public class CompanyAuthService implements InternalCreateCompanyAuthInterface, I
                 .build();
     }
 
-    /**
-     * Logs out the user by revoking their authentication tokens.
-     * Access token is added to blocklist, refresh token is removed from whitelist.
-     *
-     * @param accessToken  The access token to revoke
-     * @param refreshToken The refresh token to revoke
-     */
     @Override
     public void logout(String accessToken, String refreshToken) {
         jweTokenService.revokeTokens(accessToken, refreshToken);
         log.info("User logged out successfully");
+    }
+
+    public void setAuthAndRefreshCookieToBrowser(HttpServletResponse response, String accessToken, String refreshToken, int accessMaxAge, int refreshMaxAge) {
+        Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, accessToken);
+        authCookie.setHttpOnly(true);
+        authCookie.setSecure(true);
+        authCookie.setPath("/");
+        authCookie.setMaxAge(accessMaxAge);
+        response.addCookie(authCookie);
+
+        Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, refreshToken);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(refreshMaxAge);
+        response.addCookie(refreshCookie);
     }
 
 }
