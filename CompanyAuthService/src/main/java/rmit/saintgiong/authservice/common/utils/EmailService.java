@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.util;
+package rmit.saintgiong.authservice.common.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

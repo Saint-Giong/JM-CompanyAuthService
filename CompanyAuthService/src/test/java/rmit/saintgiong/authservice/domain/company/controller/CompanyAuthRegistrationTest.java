@@ -20,10 +20,10 @@ import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
-import rmit.saintgiong.authservice.common.util.EmailService;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
-import rmit.saintgiong.authservice.common.util.OtpService;
-import rmit.saintgiong.authservice.common.util.TokenStorageService;
+import rmit.saintgiong.authservice.common.utils.EmailService;
+import rmit.saintgiong.authservice.common.utils.JweTokenService;
+import rmit.saintgiong.authservice.common.utils.OtpService;
+import rmit.saintgiong.authservice.common.utils.TokenStorageService;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 
 import java.util.UUID;

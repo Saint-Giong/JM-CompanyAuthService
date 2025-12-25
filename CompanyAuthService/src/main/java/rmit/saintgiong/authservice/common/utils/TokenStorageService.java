@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.util;
+package rmit.saintgiong.authservice.common.utils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class TokenStorageService {
     @Value("${jwe.refresh-token-ttl-seconds:604800}")
     private long refreshTokenTtlSeconds;
 
-    // Access Token Blocklist
+    // =============================== Access Token Blocklist ===============================
 
     /**
      * Adds an access token to the blocklist (for revocation).
@@ -62,7 +62,7 @@ public class TokenStorageService {
         return Boolean.TRUE.equals(exists);
     }
 
-    // Refresh Token Whitelist
+    // =============================== Refresh Token Whitelist ===============================
 
     /**
      * Stores a refresh token in Redis (whitelist approach).

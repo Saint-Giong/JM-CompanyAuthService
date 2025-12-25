@@ -13,7 +13,7 @@ import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.common.utils.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 import rmit.saintgiong.authservice.domain.services.InternalCompanyAuthService;
@@ -41,7 +41,6 @@ class InternalGoogleOAuthServiceTest {
     void setUp() {
         internalGoogleOAuthService = Mockito.spy(new InternalGoogleOAuthService(
                 companyAuthRepository,
-                internalCompanyAuthService,
                 jweTokenService
         ));
         ReflectionTestUtils.setField(internalGoogleOAuthService, "registerTokenTtlSeconds", 300L);

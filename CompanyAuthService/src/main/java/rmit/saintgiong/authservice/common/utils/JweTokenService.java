@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.util;
+package rmit.saintgiong.authservice.common.utils;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSADecrypter;
@@ -27,17 +27,9 @@ import java.util.Map;
 import java.util.Arrays;
 
 
-// Service for generating and validating JWE (JSON Web Encryption) tokens.
-// Integrates with Redis for token storage and validation.
 @Service
 @Slf4j
 public class JweTokenService {
-
-    @Value("${jwe.public-key-path}")
-    private String publicKeyPath;
-
-    @Value("${jwe.private-key-path}")
-    private String privateKeyPath;
 
     private final JweConfig jweConfig;
     @Value("${jwe.issuer}")
@@ -75,7 +67,7 @@ public class JweTokenService {
     }
 
     /**
-     * Generates a token pair (access + refresh) for a user upon successful login.
+     * Generates a token pair (access and refresh) for a user upon successful login.
      * Access tokens are NOT stored in Redis (verified via signature + blocklist check).
      * Refresh tokens ARE stored in Redis (whitelist approach).
      *
@@ -118,10 +110,9 @@ public class JweTokenService {
         }
     }
 
-
     /**
      * Refreshes an access token using a valid refresh token.
-     * Old refresh token is revoked and new tokens are generated.
+     * The old refresh token is revoked and new tokens are generated.
      * Implements token reuse detection - if a previously used token is detected,
      * all user sessions are invalidated as a security measure.
      *
@@ -297,8 +288,14 @@ public class JweTokenService {
     }
 
     // Generates a single JWE token with the specified parameters.
-    private String generateToken(UUID userId, String email, Role role, TokenType tokenType, long ttlSeconds, String tokenId)
-            throws JOSEException {
+    private String generateToken (
+            UUID userId,
+            String email,
+            Role role,
+            TokenType tokenType,
+            long ttlSeconds,
+            String tokenId
+    ) throws JOSEException {
 
         long now = Instant.now().getEpochSecond();
         long exp = now + ttlSeconds;
@@ -330,13 +327,13 @@ public class JweTokenService {
 
     /**
      * Revokes both access and refresh tokens during logout.
-     * Adds access token to blocklist and removes refresh token from whitelist.
+     * Adds an access token to the blocklist and removes the refresh token from the whitelist.
      *
      * @param accessToken  The access token to revoke
      * @param refreshToken The refresh token to revoke (can be null)
      */
     public void revokeTokens(String accessToken, String refreshToken) {
-        // Revoke access token by adding to blocklist
+        // Revoke the access token by adding to the blocklist
         if (accessToken != null && !accessToken.isEmpty()) {
             try {
                 TokenClaimsDto accessClaims = buildTokenClaimsDto(accessToken);

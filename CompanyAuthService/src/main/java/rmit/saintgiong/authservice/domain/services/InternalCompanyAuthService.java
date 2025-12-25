@@ -33,9 +33,9 @@ import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlre
 import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
-import rmit.saintgiong.authservice.common.util.EmailService;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
-import rmit.saintgiong.authservice.common.util.OtpService;
+import rmit.saintgiong.authservice.common.utils.EmailService;
+import rmit.saintgiong.authservice.common.utils.JweTokenService;
+import rmit.saintgiong.authservice.common.utils.OtpService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.model.CompanyAuth;

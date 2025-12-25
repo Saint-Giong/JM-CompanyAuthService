@@ -11,13 +11,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authapi.internal.type.Role;
 import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.common.utils.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 
@@ -44,15 +43,13 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
     private long registerTokenTtlSeconds;
 
     private final CompanyAuthRepository companyAuthRepository;
-    private final InternalCompanyAuthInterface internalCompanyAuthInterface;
     private final JweTokenService jweTokenService;
 
     private static final GsonFactory GSON_FACTORY = new GsonFactory().getDefaultInstance();
     private static final NetHttpTransport NET_HTTP_TRANSPORT = new NetHttpTransport();
 
-    public InternalGoogleOAuthService(CompanyAuthRepository companyAuthRepository, InternalCompanyAuthInterface internalCompanyAuthInterface, JweTokenService jweTokenService) {
+    public InternalGoogleOAuthService(CompanyAuthRepository companyAuthRepository, JweTokenService jweTokenService) {
         this.companyAuthRepository = companyAuthRepository;
-        this.internalCompanyAuthInterface = internalCompanyAuthInterface;
         this.jweTokenService = jweTokenService;
     }
 
