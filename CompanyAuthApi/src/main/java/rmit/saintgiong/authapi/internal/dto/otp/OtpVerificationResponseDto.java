@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.dto;
+package rmit.saintgiong.authapi.internal.dto.otp;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,14 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO for logout response.
- * Contains the result of logout operation.
+ * DTO for OTP verification response.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LogoutResponseDto {
+public class OtpVerificationResponseDto {
     private boolean success;
     private String message;
 }

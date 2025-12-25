@@ -8,17 +8,16 @@ import rmit.saintgiong.shared.token.TokenPairDto;
 @AllArgsConstructor
 public class GoogleOAuthResponseDto {
     private TokenPairDto tokenPairDto;
-    private String registerToken;
-
+    private String tempToken;
     // Access token expiration time in seconds.
-    private long registerTokenExpiresIn;
+    private long tempTokenExpiresIn;
 
     private String email;
     private String name;
 
-    public GoogleOAuthResponseDto(TokenPairDto tokenPairDto, String registerToken, String email, String name) {
+    public GoogleOAuthResponseDto(TokenPairDto tokenPairDto, String tempToken, String email, String name) {
         this.tokenPairDto = tokenPairDto;
-        this.registerToken = registerToken;
+        this.tempToken = tempToken;
         this.email = email;
         this.name = name;
     }
