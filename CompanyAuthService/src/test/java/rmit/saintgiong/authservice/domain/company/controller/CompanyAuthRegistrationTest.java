@@ -15,8 +15,8 @@
 //import org.springframework.http.MediaType;
 //import org.springframework.test.web.servlet.MockMvc;
 //import org.springframework.test.web.servlet.MvcResult;
-//import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
-//import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
+//import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationResponseDto;
+//import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationRequestDto;
 //import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 //import rmit.saintgiong.authapi.internal.swervice.InternalGoogleOAuthInterface;
 //import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;

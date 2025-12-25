@@ -52,14 +52,14 @@ class InternalGoogleOAuthServiceTest {
         GoogleIdToken.Payload payload = payload("google-id", "new@company.com", true, "New User");
         doReturn(payload).when(internalGoogleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
         when(companyAuthRepository.findByEmail("new@company.com")).thenReturn(Optional.empty());
-        when(jweTokenService.generateRegistrationTokenForGoogleAuth("new@company.com", "google-id"))
+        when(jweTokenService.generateTempTokenForGoogleAuth("new@company.com", "google-id"))
                 .thenReturn("temp-token");
 
         GoogleOAuthResponseDto result = internalGoogleOAuthService.authenticateGoogleUser(code);
 
         assertNull(result.getTokenPairDto());
-        assertEquals("temp-token", result.getRegisterToken());
-        assertEquals(300L, result.getRegisterTokenExpiresIn());
+        assertEquals("temp-token", result.getTempToken());
+        assertEquals(300L, result.getTempTokenExpiresIn());
         assertEquals("new@company.com", result.getEmail());
         assertEquals("New User", result.getName());
     }
@@ -75,7 +75,7 @@ class InternalGoogleOAuthServiceTest {
         when(companyAuthRepository.findByEmail("conflict@company.com")).thenReturn(Optional.of(entity));
 
         assertThrows(CompanyAccountAlreadyExisted.class, () -> internalGoogleOAuthService.authenticateGoogleUser(code));
-        verify(jweTokenService, never()).generateRegistrationTokenForGoogleAuth(anyString(), anyString());
+        verify(jweTokenService, never()).generateTempTokenForGoogleAuth(anyString(), anyString());
     }
 
     @Test
@@ -98,7 +98,7 @@ class InternalGoogleOAuthServiceTest {
                 .accessTokenExpiresIn(900L)
                 .refreshTokenExpiresIn(604800L)
                 .build();
-        when(jweTokenService.generateTokenPair(companyId, "login@company.com", Role.COMPANY, true))
+        when(jweTokenService.generateTokenPairDto(companyId, "login@company.com", Role.COMPANY, true))
                 .thenReturn(tokenPairDto);
 
         GoogleOAuthResponseDto result = internalGoogleOAuthService.authenticateGoogleUser(code);
@@ -106,7 +106,7 @@ class InternalGoogleOAuthServiceTest {
         assertNotNull(result.getTokenPairDto());
         assertEquals("access-token", result.getTokenPairDto().getAccessToken());
         assertEquals("refresh-token", result.getTokenPairDto().getRefreshToken());
-        assertNull(result.getRegisterToken());
+        assertNull(result.getTempToken());
         assertEquals("login@company.com", result.getEmail());
         assertNull(result.getName());
     }

@@ -79,4 +79,4 @@ springdoc:
   show-actuator: false
 
 google:
-  oauth2_redirect_uri: http://localhost:8080/dashboard
+  oauth2_redirect_uri: http://localhost:8180/dashboard
