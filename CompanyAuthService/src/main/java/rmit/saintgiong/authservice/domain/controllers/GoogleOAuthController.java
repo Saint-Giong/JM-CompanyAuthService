@@ -1,15 +1,14 @@
 package rmit.saintgiong.authservice.domain.controllers;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationGoogleRequestDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
+import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationGoogleRequestDto;
+import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationResponseDto;
 import rmit.saintgiong.shared.response.GenericResponseDto;
 import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
@@ -17,6 +16,7 @@ import rmit.saintgiong.authapi.internal.dto.oauth.GoogleRegistrationPrefillDto;
 import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
+import rmit.saintgiong.shared.type.CookieType;
 
 import java.util.concurrent.Callable;
 
@@ -27,10 +27,6 @@ public class GoogleOAuthController {
 
     private final InternalCompanyAuthInterface internalCompanyAuthInterface;
     private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;
-
-    private static final String TEMP_COOKIE_NAME = "temp_token";
-    private static final String AUTH_COOKIE_NAME = "auth_token";
-    private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     @GetMapping("/google/redirect-url")
     public ResponseEntity<GenericResponseDto<?>> getGoogleRedirectUrl() {
@@ -50,25 +46,24 @@ public class GoogleOAuthController {
             }
 
             GoogleOAuthResponseDto oauthResponseDto = internalGoogleOAuthInterface.authenticateGoogleUser(code);
-
             TokenPairDto tokenPairDto = oauthResponseDto.getTokenPairDto();
+
             // login is ok
             if (tokenPairDto != null) {
-                Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, tokenPairDto.getAccessToken());
-                authCookie.setHttpOnly(true);
-                authCookie.setSecure(true);
-                authCookie.setPath("/");
-                authCookie.setMaxAge((int) tokenPairDto.getAccessTokenExpiresIn());
-                response.addCookie(authCookie);
+                internalCompanyAuthInterface.setCookieToBrowser(
+                        response,
+                        CookieType.ACCESS_TOKEN,
+                        tokenPairDto.getAccessToken(),
+                        (int) tokenPairDto.getAccessTokenExpiresIn()
+                );
 
-                // set a refresh token in HttpOnly cookie
                 if (tokenPairDto.getRefreshToken() != null && !tokenPairDto.getRefreshToken().isEmpty()) {
-                    Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenPairDto.getRefreshToken());
-                    refreshCookie.setHttpOnly(true);
-                    refreshCookie.setSecure(true);
-                    refreshCookie.setPath("/");
-                    refreshCookie.setMaxAge((int) tokenPairDto.getRefreshTokenExpiresIn());
-                    response.addCookie(refreshCookie);
+                    internalCompanyAuthInterface.setCookieToBrowser(
+                            response,
+                            CookieType.REFRESH_TOKEN,
+                            tokenPairDto.getRefreshToken(),
+                            (int) tokenPairDto.getRefreshTokenExpiresIn()
+                    );
                 }
 
                 return ResponseEntity
@@ -76,19 +71,21 @@ public class GoogleOAuthController {
                         .body(new GenericResponseDto<>(true, "", null));
             }
 
-            if (oauthResponseDto.getRegisterToken() != null) {
-                Cookie temp = new Cookie(TEMP_COOKIE_NAME, oauthResponseDto.getRegisterToken());
-                temp.setHttpOnly(true);
-                temp.setSecure(true);
-                temp.setPath("/");
-                temp.setMaxAge((int) oauthResponseDto.getRegisterTokenExpiresIn());
-                response.addCookie(temp);
-
-                GoogleRegistrationPrefillDto prefillDto = new GoogleRegistrationPrefillDto(oauthResponseDto.getEmail(), oauthResponseDto.getName());
+            if (oauthResponseDto.getTempToken() != null) {
+                internalCompanyAuthInterface.setCookieToBrowser(
+                        response,
+                        CookieType.TEMP_TOKEN,
+                        oauthResponseDto.getTempToken(),
+                        (int) oauthResponseDto.getTempTokenExpiresIn()
+                );
+                GoogleRegistrationPrefillDto prefilledDto = GoogleRegistrationPrefillDto.builder()
+                        .email(oauthResponseDto.getEmail())
+                        .name(oauthResponseDto.getName())
+                        .build();
 
                 return ResponseEntity
                         .status(HttpStatus.OK)
-                        .body(new GenericResponseDto<>(true, "", prefillDto));
+                        .body(new GenericResponseDto<>(true, "", prefilledDto));
             }
 
             return ResponseEntity
@@ -100,22 +97,16 @@ public class GoogleOAuthController {
     @PostMapping("/google/register")
     public Callable<ResponseEntity<GenericResponseDto<?>>> registerCompanyWithGoogleAuthentication(
             @Valid @RequestBody CompanyRegistrationGoogleRequestDto requestDto,
-            @CookieValue(name = TEMP_COOKIE_NAME) String tempToken,
+            @CookieValue(name = CookieType.TEMP_TOKEN) String tempToken,
             HttpServletResponse response
     ) {
         return () -> {
             CompanyRegistrationResponseDto registerResponseDto = internalCompanyAuthInterface.registerCompanyWithGoogleId(requestDto, tempToken);
-
-            Cookie tempTokenCookie = new Cookie(TEMP_COOKIE_NAME, "");
-            tempTokenCookie.setPath("/");
-            tempTokenCookie.setHttpOnly(true);
-            tempTokenCookie.setSecure(true);
-            tempTokenCookie.setMaxAge(0);
-            response.addCookie(tempTokenCookie);
+            internalCompanyAuthInterface.clearBrowserCookie(response, CookieType.TEMP_TOKEN);
 
             return ResponseEntity
                     .status(HttpStatus.OK)
-                    .body(new GenericResponseDto<>(true, "Register company successfully!", registerResponseDto));
+                    .body(new GenericResponseDto<>(true, "Register company via Google successfully!", registerResponseDto));
         };
     }
 }

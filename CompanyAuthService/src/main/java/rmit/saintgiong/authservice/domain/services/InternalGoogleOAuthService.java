@@ -39,8 +39,8 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
     @Value("${google.oauth2_redirect_uri:http://localhost:8180/dashboard}")
     private String redirectLoginUri;
 
-    @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
-    private long registerTokenTtlSeconds;
+    @Value("${jwe.register-token-ttl-seconds:300}")
+    private long tempTokenTtlSeconds;
 
     private final CompanyAuthRepository companyAuthRepository;
     private final JweTokenService jweTokenService;
@@ -70,8 +70,8 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
 
         if (savedCompany.isEmpty()) {
             // Has no email account --> Register
-            String registerToken = jweTokenService.generateRegistrationTokenForGoogleAuth(googleEmail, googleId);
-            return new GoogleOAuthResponseDto(null, registerToken, registerTokenTtlSeconds, googleEmail, googleName);
+            String tempToken = jweTokenService.generateTempTokenForGoogleAuth(googleEmail, googleId);
+            return new GoogleOAuthResponseDto(null, tempToken, tempTokenTtlSeconds, googleEmail, googleName);
         }
 
         // Has email but no sso --> Duplicated
@@ -83,7 +83,7 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
             throw new InvalidCredentialsException(String.format(String.format("Google ID does not match the stored Google ID for the email address: %s. This account is linked to a different Google account.", googleEmail)));
         }
         // Has email and sso --> Login
-        TokenPairDto tokenPairDto = jweTokenService.generateTokenPair(
+        TokenPairDto tokenPairDto = jweTokenService.generateTokenPairDto(
                 savedCompany.get().getCompanyId(),
                 savedCompany.get().getEmail(),
                 Role.COMPANY,

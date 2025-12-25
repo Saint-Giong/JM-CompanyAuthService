@@ -1,7 +1,7 @@
 package rmit.saintgiong.authservice.common.exception;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.shared.response.ErrorResponseDto;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
@@ -17,6 +18,7 @@ import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsExce
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.authservice.common.exception.token.TokenExpiredException;
 import rmit.saintgiong.authservice.common.exception.token.TokenReuseException;
+import rmit.saintgiong.shared.type.CookieType;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -24,10 +26,10 @@ import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
+@AllArgsConstructor
 public class GlobalExceptionHandler {
 
-    private static final String AUTH_COOKIE_NAME = "auth_token";
-    private static final String REFRESH_COOKIE_NAME = "refresh_token";
+    private final InternalCompanyAuthInterface internalCompanyAuthInterface;
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGlobalException(
@@ -181,22 +183,8 @@ public class GlobalExceptionHandler {
             HttpServletResponse response
     ) {
         log.warn("Token reuse detected: {}", exception.getMessage());
-
-        // Clear auth_token cookie
-        Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, null);
-        authCookie.setHttpOnly(true);
-        authCookie.setSecure(true);
-        authCookie.setPath("/");
-        authCookie.setMaxAge(0);
-        response.addCookie(authCookie);
-
-        // Clear refresh_token cookie
-        Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, null);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(true);
-        refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(0);
-        response.addCookie(refreshCookie);
+        internalCompanyAuthInterface.clearBrowserCookie(response, CookieType.ACCESS_TOKEN);
+        internalCompanyAuthInterface.clearBrowserCookie(response, CookieType.REFRESH_TOKEN);
 
         ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
                 .apiPath(request.getDescription(false).replace("uri=", ""))
