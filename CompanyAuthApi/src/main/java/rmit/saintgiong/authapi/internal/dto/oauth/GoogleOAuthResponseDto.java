@@ -1,7 +1,7 @@
 package rmit.saintgiong.authapi.internal.dto.oauth;
 
 import lombok.*;
-import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import rmit.saintgiong.shared.token.TokenPairDto;
 
 @Data
 @NoArgsConstructor

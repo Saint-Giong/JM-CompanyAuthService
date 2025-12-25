@@ -5,12 +5,11 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import rmit.saintgiong.authapi.internal.type.Role;
-import rmit.saintgiong.authapi.internal.type.TokenType;
-import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
-import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import rmit.saintgiong.shared.type.Role;
+import rmit.saintgiong.shared.type.TokenType;
+import rmit.saintgiong.shared.token.TokenClaimsDto;
+import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.token.TokenExpiredException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
@@ -32,23 +31,11 @@ import java.util.Arrays;
 public class JweTokenService {
 
     private final JweConfig jweConfig;
-    @Value("${jwe.issuer}")
-    private String issuer;
-
-    @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
-    private long registerTokenTtlSeconds;
-
-    @Value("${jwe.access-token-ttl-seconds:900}")  // Default: 15 minutes
-    private long accessTokenTtlSeconds;
-
-    @Value("${jwe.refresh-token-ttl-seconds:604800}")  // Default: 7 days
-    private long refreshTokenTtlSeconds;
+    private final RsaKeyLoader keyLoader;
+    private final TokenStorageService tokenStorageService;
 
     private RSAPublicKey publicKey;
     private RSAPrivateKey privateKey;
-
-    private final RsaKeyLoader keyLoader;
-    private final TokenStorageService tokenStorageService;
 
     public JweTokenService(RsaKeyLoader keyLoader, TokenStorageService tokenStorageService, JweConfig jweConfig) {
         this.keyLoader = keyLoader;
@@ -67,37 +54,47 @@ public class JweTokenService {
     }
 
     /**
-     * Generates a token pair (access and refresh) for a user upon successful login.
-     * Access tokens are NOT stored in Redis (verified via signature + blocklist check).
+     * Generates a token pair (access and refresh) for a user upon successful authentication.
+     * Access tokens are NOT stored in Redis (verified via signature + blocklist check)
      * Refresh tokens ARE stored in Redis (whitelist approach).
      *
-     * @param userId The user/company ID
-     * @param email  The user email
-     * @param role   The user role
+     * @param userId      The user/company ID
+     * @param email       The user email
+     * @param role        The user role
      * @param isActivated Whether the user is activated or not.
      * @return TokenPairDto containing both tokens and their expiration info
      */
     public TokenPairDto generateTokenPair(UUID userId, String email, Role role, Boolean isActivated) {
         try {
-
             String accessTokenId = UUID.randomUUID().toString();
             String refreshTokenId = UUID.randomUUID().toString();
 
-            String accessToken = generateToken(userId, email, role, TokenType.ACCESS, jweConfig.getAccessTokenTtlSeconds(), accessTokenId);
+            String accessToken = generateToken(
+                    userId,
+                    email,
+                    role,
+                    TokenType.ACCESS,
+                    jweConfig.getAccessTokenTtlSeconds(),
+                    accessTokenId
+            );
             String refreshToken = "";
 
-            // Only generate refresh token if user is activated
+            // Only generate the refresh token on activated accounts
             if (isActivated) {
-                refreshToken = generateToken(userId, email, role, TokenType.REFRESH, jweConfig.getRefreshTokenTtlSeconds(), refreshTokenId);
+                refreshToken = generateToken(
+                        userId,
+                        email,
+                        role,
+                        TokenType.REFRESH,
+                        jweConfig.getRefreshTokenTtlSeconds(),
+                        refreshTokenId
+                );
 
                 // Only store refresh token in Redis (whitelist approach)
                 // Access token is verified via JWE decryption + blocklist check
                 tokenStorageService.storeRefreshToken(refreshTokenId, userId, refreshToken);
             }
 
-
-            //Only generate long-lived refresh token for activated users
-            //Inactivated users will only have short-lived access tokens
             return TokenPairDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
@@ -288,7 +285,7 @@ public class JweTokenService {
     }
 
     // Generates a single JWE token with the specified parameters.
-    private String generateToken (
+    private String generateToken(
             UUID userId,
             String email,
             Role role,

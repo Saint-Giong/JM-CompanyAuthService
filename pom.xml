@@ -55,7 +55,7 @@
         <dependency>
             <groupId>devision.saintgiong</groupId>
             <artifactId>sg-shared-dto-package</artifactId>
-            <version>0.0.1-SNAPSHOT-09273510122025</version>
+            <version>0.0.1-SNAPSHOT-13232025122025</version>
         </dependency>
     </dependencies>
 

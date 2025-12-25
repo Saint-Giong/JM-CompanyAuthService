@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
+import rmit.saintgiong.shared.response.ErrorResponseDto;
 
 import java.time.LocalDateTime;
 
@@ -17,7 +17,7 @@ public class OtpExceptionHandler {
             OtpResendCooldownException.class,
             OtpHourlyLimitExceededException.class
     })
-    public ResponseEntity<ErrorResponseDto> handleOtpRateLimitExceptions(
+    public ResponseEntity<rmit.saintgiong.shared.response.ErrorResponseDto> handleOtpRateLimitExceptions(
             RuntimeException exception,
             WebRequest request
     ) {

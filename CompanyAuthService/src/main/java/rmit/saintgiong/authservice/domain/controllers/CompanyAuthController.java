@@ -14,7 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rmit.saintgiong.authapi.internal.dto.*;
-import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
+import rmit.saintgiong.shared.response.ErrorResponseDto;
 import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
