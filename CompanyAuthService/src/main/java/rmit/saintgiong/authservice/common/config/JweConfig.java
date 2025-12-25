@@ -13,7 +13,7 @@ public class JweConfig {
     private String issuer;
 
     @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
-    private int registerTokenTtlSeconds;
+    private int tempTokenTtlSeconds;
 
     @Value("${jwe.access-token-ttl-seconds:900}")  // Default: 15 minutes
     private int accessTokenTtlSeconds;

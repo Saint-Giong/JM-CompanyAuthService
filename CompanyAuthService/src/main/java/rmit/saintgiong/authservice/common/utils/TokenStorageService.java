@@ -2,10 +2,11 @@ package rmit.saintgiong.authservice.common.utils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import rmit.saintgiong.authservice.common.config.JweConfig;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -18,36 +19,32 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class TokenStorageService {
 
+    private final JweConfig jweConfig;
     private final RedisTemplate<String, String> redisTemplate;
 
-    private static final String ACCESS_TOKEN_BLOCKLIST_PREFIX = "blocklist:access:";
-    private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
-    private static final String USER_REFRESH_TOKENS_PREFIX = "user_tokens:refresh:";
-    private static final String USED_REFRESH_TOKEN_PREFIX = "used_refresh_token:";
-
-    @Value("${jwe.access-token-ttl-seconds:900}")
-    private long accessTokenTtlSeconds;
-
-    @Value("${jwe.refresh-token-ttl-seconds:604800}")
-    private long refreshTokenTtlSeconds;
+    private static final String BLOCKLIST_ACCESS_TOKEN_PREFIX = "blocklist:access_token:";
+    private static final String STORED_REFRESH_TOKEN_PREFIX = "refresh_token:";
+    private static final String USER_REFRESH_TOKEN_PREFIX = "user:refresh_token:";
+    private static final String REVOKED_REFRESH_TOKEN_PREFIX = "revoked:refresh_token:";
 
     // =============================== Access Token Blocklist ===============================
-
     /**
      * Adds an access token to the blocklist (for revocation).
      * The token is stored until its original expiration time.
      *
-     * @param tokenId          Unique token identifier (jti)
-     * @param remainingTtl     Remaining TTL in seconds until token expires
+     * @param tokenId      Unique token identifier (jti)
+     * @param remainingTtl Remaining TTL in seconds until token expires
      */
     public void blockAccessToken(String tokenId, long remainingTtl) {
         if (remainingTtl <= 0) {
             // Token already expired, no need to block
             return;
         }
-        String key = ACCESS_TOKEN_BLOCKLIST_PREFIX + tokenId;
-        redisTemplate.opsForValue().set(key, "blocked", remainingTtl, TimeUnit.SECONDS);
-        log.debug("Added access token {} to blocklist with TTL {} seconds", tokenId, remainingTtl);
+        if (isAccessTokenBlocked(tokenId)) {
+            String blockedRefreshKey = BLOCKLIST_ACCESS_TOKEN_PREFIX + tokenId;
+            redisTemplate.opsForValue().set(blockedRefreshKey, "blocked", remainingTtl, TimeUnit.SECONDS);
+            log.debug("Added access token {} to blocklist with TTL {} seconds", tokenId, remainingTtl);
+        }
     }
 
     /**
@@ -57,29 +54,28 @@ public class TokenStorageService {
      * @return true if the token is blocked/revoked, false otherwise
      */
     public boolean isAccessTokenBlocked(String tokenId) {
-        String key = ACCESS_TOKEN_BLOCKLIST_PREFIX + tokenId;
+        String key = BLOCKLIST_ACCESS_TOKEN_PREFIX + tokenId;
         Boolean exists = redisTemplate.hasKey(key);
         return Boolean.TRUE.equals(exists);
     }
 
     // =============================== Refresh Token Whitelist ===============================
-
     /**
      * Stores a refresh token in Redis (whitelist approach).
      *
-     * @param tokenId   Unique token identifier (jti)
-     * @param userId    The user/company ID
-     * @param token     The actual token string
+     * @param tokenId Unique token identifier (jti)
+     * @param userId  The user/company ID
+     * @param token   The actual token string
      */
-    public void storeRefreshToken(String tokenId, UUID userId, String token) {
-        String key = REFRESH_TOKEN_PREFIX + tokenId;
-        redisTemplate.opsForValue().set(key, token, refreshTokenTtlSeconds, TimeUnit.SECONDS);
-        
+    public void storeNewRefreshToken(String tokenId, UUID userId, String token) {
+        String refreshKey = STORED_REFRESH_TOKEN_PREFIX + tokenId;
+        redisTemplate.opsForValue().set(refreshKey, token, jweConfig.getRefreshTokenTtlSeconds(), TimeUnit.SECONDS);
+
         // Store under user's refresh tokens for bulk revocation
-        String userTokensKey = USER_REFRESH_TOKENS_PREFIX + userId;
-        redisTemplate.opsForSet().add(userTokensKey, tokenId);
-        redisTemplate.expire(userTokensKey, refreshTokenTtlSeconds, TimeUnit.SECONDS);
-        
+        String userTokenKey = USER_REFRESH_TOKEN_PREFIX + userId;
+        redisTemplate.opsForSet().add(userTokenKey, tokenId);
+        redisTemplate.expire(userTokenKey, jweConfig.getRefreshTokenTtlSeconds(), TimeUnit.SECONDS);
+
         log.debug("Stored refresh token {} for user {}", tokenId, userId);
     }
 
@@ -89,10 +85,10 @@ public class TokenStorageService {
      * @param tokenId The token ID to validate
      * @return true if the token exists, false otherwise
      */
-    public boolean isRefreshTokenValid(String tokenId) {
-        String key = REFRESH_TOKEN_PREFIX + tokenId;
-        Boolean exists = redisTemplate.hasKey(key);
-        return Boolean.TRUE.equals(exists);
+    public boolean isRefreshTokenExisted(String tokenId) {
+        String key = STORED_REFRESH_TOKEN_PREFIX + tokenId;
+        Boolean isExisted = redisTemplate.hasKey(key);
+        return Boolean.TRUE.equals(isExisted);
     }
 
     /**
@@ -101,14 +97,14 @@ public class TokenStorageService {
      * @param tokenId The token ID to revoke
      */
     public void revokeRefreshToken(String tokenId) {
-        String key = REFRESH_TOKEN_PREFIX + tokenId;
+        String key = STORED_REFRESH_TOKEN_PREFIX + tokenId;
         redisTemplate.delete(key);
-        
+
         // Mark token as used for reuse detection
-        String usedKey = USED_REFRESH_TOKEN_PREFIX + tokenId;
-        redisTemplate.opsForValue().set(usedKey, "used", refreshTokenTtlSeconds, TimeUnit.SECONDS);
-        
-        log.debug("Revoked refresh token {} and marked as used", tokenId);
+        String revokedMarkedKey = REVOKED_REFRESH_TOKEN_PREFIX + tokenId;
+        redisTemplate.opsForValue().set(revokedMarkedKey, "revoked", jweConfig.getRefreshTokenTtlSeconds(), TimeUnit.SECONDS);
+
+        log.debug("Revoked refresh token {} and marked as revoked", tokenId);
     }
 
     /**
@@ -117,10 +113,10 @@ public class TokenStorageService {
      * @param tokenId The token ID to check
      * @return true if the token was previously used, false otherwise
      */
-    public boolean isRefreshTokenUsed(String tokenId) {
-        String usedKey = USED_REFRESH_TOKEN_PREFIX + tokenId;
-        Boolean exists = redisTemplate.hasKey(usedKey);
-        return Boolean.TRUE.equals(exists);
+    public boolean isRefreshTokenRevoked(String tokenId) {
+        String revokedRefreshKey = REVOKED_REFRESH_TOKEN_PREFIX + tokenId;
+        Boolean isExistedAsRevoked = redisTemplate.hasKey(revokedRefreshKey);
+        return Boolean.TRUE.equals(isExistedAsRevoked);
     }
 
     /**
@@ -130,20 +126,19 @@ public class TokenStorageService {
      * @param userId The user ID whose tokens should be revoked
      */
     public void revokeAllUserRefreshTokens(UUID userId) {
-        String userTokensKey = USER_REFRESH_TOKENS_PREFIX + userId;
-        java.util.Set<String> tokenIds = redisTemplate.opsForSet().members(userTokensKey);
-        
-        if (tokenIds != null && !tokenIds.isEmpty()) {
-            for (String tokenId : tokenIds) {
-                String key = REFRESH_TOKEN_PREFIX + tokenId;
-                redisTemplate.delete(key);
-                
-                // Mark as used for reuse detection
-                String usedKey = USED_REFRESH_TOKEN_PREFIX + tokenId;
-                redisTemplate.opsForValue().set(usedKey, "used", refreshTokenTtlSeconds, TimeUnit.SECONDS);
+        String userTokenKey = USER_REFRESH_TOKEN_PREFIX + userId;
+        Set<String> tokenIdList = redisTemplate.opsForSet().members(userTokenKey);
+
+        if (tokenIdList != null && !tokenIdList.isEmpty()) {
+            for (String tokenId : tokenIdList) {
+                String refreshKey = STORED_REFRESH_TOKEN_PREFIX + tokenId;
+                redisTemplate.delete(refreshKey);
+
+                String revokedRefreshKey = REVOKED_REFRESH_TOKEN_PREFIX + tokenId;
+                redisTemplate.opsForValue().set(revokedRefreshKey, "revoked", jweConfig.getRefreshTokenTtlSeconds(), TimeUnit.SECONDS);
             }
-            redisTemplate.delete(userTokensKey);
-            log.info("Revoked all {} refresh tokens for user {}", tokenIds.size(), userId);
+            redisTemplate.delete(userTokenKey);
+            log.info("Revoked all {} refresh tokens for user {}", tokenIdList.size(), userId);
         }
     }
 }
