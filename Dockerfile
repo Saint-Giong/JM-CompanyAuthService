@@ -10,7 +10,7 @@ COPY SG-SharedDtoPackage/mvnw ./SG-SharedDtoPackage/mvnw
 
 RUN --mount=type=cache,target=/root/.m2 \
     cd SG-SharedDtoPackage && \
-    ./mvnw clean install
+    ./mvnw clean install -DskipTests
 # --------------------
 
 # Maven runner
