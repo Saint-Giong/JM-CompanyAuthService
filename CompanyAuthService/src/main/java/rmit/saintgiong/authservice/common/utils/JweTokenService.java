@@ -271,9 +271,9 @@ public class JweTokenService {
     }
 
     // Decrypts and validates a JWE token.
-    private TokenClaimsDto getTokenClaimsDtoDecryptedFromTokenString(String jweString) {
+    public TokenClaimsDto getTokenClaimsDtoDecryptedFromTokenString(String jweString) {
         try {
-            JWEObject jweObject = decryptAndValidateTokenStringToJweObject(jweString, null);
+            JWEObject jweObject = validateAndConvertTokenStringToJweObject(jweString, null);
             Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
             Number iat = (Number) jweObject.getHeader().getCustomParam("iat");
@@ -299,7 +299,7 @@ public class JweTokenService {
         }
     }
 
-    private JWEObject decryptAndValidateTokenStringToJweObject(String jweString, TokenType type)
+    private JWEObject validateAndConvertTokenStringToJweObject(String jweString, TokenType type)
             throws JOSEException, ParseException {
         JWEObject jweObject = JWEObject.parse(jweString);
         jweObject.decrypt(new RSADecrypter(privateKey));
@@ -374,7 +374,7 @@ public class JweTokenService {
 
     public String getGoogleIdFromJweToken(String jweString) {
         try {
-            JWEObject jweObject = decryptAndValidateTokenStringToJweObject(jweString, TokenType.TEMP);
+            JWEObject jweObject = validateAndConvertTokenStringToJweObject(jweString, TokenType.TEMP);
             Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
             String googleIdString =
@@ -397,7 +397,7 @@ public class JweTokenService {
     // Get Email from a callback access token from Google
     public String getEmailFromJweString(String jweString) {
         try {
-            JWEObject jweObject = decryptAndValidateTokenStringToJweObject(jweString, TokenType.TEMP);
+            JWEObject jweObject = validateAndConvertTokenStringToJweObject(jweString, TokenType.TEMP);
             Map<String, Object> tokenPayload = jweObject.getPayload().toJSONObject();
 
             String emailString =
