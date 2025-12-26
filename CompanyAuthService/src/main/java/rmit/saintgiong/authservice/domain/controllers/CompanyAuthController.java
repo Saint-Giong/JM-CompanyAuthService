@@ -67,7 +67,6 @@ public class CompanyAuthController {
                     )
             )
     })
-
     @PostMapping("/register")
     public Callable<ResponseEntity<CompanyRegistrationResponseDto>> registerCompanyWithEmailAndPassword(
             @Valid @RequestBody CompanyRegistrationRequestDto registrationDto
@@ -315,7 +314,6 @@ public class CompanyAuthController {
             );
         };
     }
-
 
     @GetMapping("/hello")
     public String hello() {
