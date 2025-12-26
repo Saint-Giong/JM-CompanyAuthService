@@ -78,7 +78,7 @@ public class JweTokenService {
                     jweConfig.getAccessTokenTtlSeconds(),
                     accessTokenId
             );
-            String refreshToken = "";
+            String refreshToken = null;
 
             // Only generate the refresh token on activated accounts
             if (isActivated) {

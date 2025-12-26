@@ -310,12 +310,14 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
             String token,
             int maxAge
     ) {
-        Cookie cookie = new Cookie(cookieType, token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(maxAge);
-        response.addCookie(cookie);
+        if (token != null) {
+            Cookie cookie = new Cookie(cookieType, token);
+            cookie.setHttpOnly(true);
+            cookie.setSecure(true);
+            cookie.setPath("/");
+            cookie.setMaxAge(maxAge);
+            response.addCookie(cookie);
+        }
     }
 
     @Override
