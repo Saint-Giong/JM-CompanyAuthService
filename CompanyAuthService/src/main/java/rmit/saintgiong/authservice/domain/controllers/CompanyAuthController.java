@@ -211,7 +211,7 @@ public class CompanyAuthController {
             if (authToken == null || authToken.isEmpty()) {
                 throw new InvalidTokenException("Authentication token not found. Please login first.");
             }
-            log.info("Resending OTP for company with token:");
+            log.info("Resending OTP for company with token.");
             // Validate and extract company ID from the token via the service layer
             UUID companyId = internalCompanyAuthService.validateAccessTokenAndGetCompanyId(authToken);
 

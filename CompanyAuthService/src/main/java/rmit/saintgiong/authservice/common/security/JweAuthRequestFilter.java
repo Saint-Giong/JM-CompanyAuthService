@@ -41,23 +41,23 @@ public class JweAuthRequestFilter extends OncePerRequestFilter {
         List<GrantedAuthority> authorityList = new ArrayList<>();
 
         String accessHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        String refreshToken = request.getHeader("X-Refresh-Token");
+        String refreshHeader = request.getHeader("X-Refresh-Token");
 
         String currentUserId = "";
-        if (refreshToken != null) {
-            currentUserId = extractAndSetRoleForSecurityContext(refreshToken, authorityList, true);
-        }
-
         if (accessHeader != null && accessHeader.startsWith("Bearer ")) {
-            String accessToken = accessHeader.replace("Bearer ", "");
-            extractAndSetRoleForSecurityContext(accessToken, authorityList, false);
+            String accessToken = accessHeader.substring(7);
+            String userId = extractAndSetRoleForSecurityContext(accessToken, authorityList, false);
+            if (userId != null) currentUserId = userId;
         }
 
-        assert currentUserId != null;
+        if (refreshHeader != null && !refreshHeader.isEmpty()) {
+            String userId = extractAndSetRoleForSecurityContext(refreshHeader, authorityList, true);
+            if (userId != null && currentUserId.isEmpty()) currentUserId = userId;
+        }
+
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(currentUserId, null, authorityList);
         auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         context.setAuthentication(auth);
-
         SecurityContextHolder.setContext(context);
 
         filterChain.doFilter(request, response);
@@ -65,6 +65,8 @@ public class JweAuthRequestFilter extends OncePerRequestFilter {
 
     private String extractAndSetRoleForSecurityContext(String tokenValue, List<GrantedAuthority> authorityList, boolean isRefresh) {
         try {
+            if (tokenValue == null || tokenValue.trim().isEmpty()) return null;
+
             TokenClaimsDto tokenClaimsDto = jweTokenService.getTokenClaimsDtoDecryptedFromTokenString(tokenValue);
 
             if (tokenClaimsDto != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -78,5 +80,10 @@ public class JweAuthRequestFilter extends OncePerRequestFilter {
         }
 
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
     }
 }
