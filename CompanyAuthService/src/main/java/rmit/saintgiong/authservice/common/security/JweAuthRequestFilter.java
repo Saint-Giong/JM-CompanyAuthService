@@ -7,13 +7,11 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpHeaders;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -45,20 +43,22 @@ public class JweAuthRequestFilter extends OncePerRequestFilter {
         String accessHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         String refreshToken = request.getHeader("X-Refresh-Token");
 
+        String currentUserId = "";
         if (refreshToken != null) {
-            String currentUserId = extractAndSetRoleForSecurityContext(refreshToken, authorityList, true);
-
-            if (accessHeader != null && accessHeader.startsWith("Bearer ")) {
-                String accessToken = accessHeader.replace("Bearer ", "");
-                extractAndSetRoleForSecurityContext(accessToken, authorityList, false);
-            }
-
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(currentUserId, null, authorityList);
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            context.setAuthentication(auth);
-
-            SecurityContextHolder.setContext(context);
+            currentUserId = extractAndSetRoleForSecurityContext(refreshToken, authorityList, true);
         }
+
+        if (accessHeader != null && accessHeader.startsWith("Bearer ")) {
+            String accessToken = accessHeader.replace("Bearer ", "");
+            extractAndSetRoleForSecurityContext(accessToken, authorityList, false);
+        }
+
+        assert currentUserId != null;
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(currentUserId, null, authorityList);
+        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        context.setAuthentication(auth);
+
+        SecurityContextHolder.setContext(context);
 
         filterChain.doFilter(request, response);
     }
