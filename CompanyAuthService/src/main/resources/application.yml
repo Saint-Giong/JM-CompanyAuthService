@@ -60,10 +60,6 @@ jwe:
   access-token-ttl-seconds: 900
   refresh-token-ttl-seconds: 604800
 
-  # Load keys from classpath files (more reliable than env vars for multi-line keys)
-  public-key-path: ${JWE_PUBLIC_KEY_PATH:classpath:keys/public_key.pem}
-  private-key-path: ${JWE_PRIVATE_KEY_PATH:classpath:keys/private_key.pem}
-
 otp:
   ttl-seconds: 300               # existing, OTP validity
   max-verification-attempts: 5   # max wrong attempts before lockout
@@ -83,4 +79,4 @@ springdoc:
   show-actuator: false
 
 google:
-  oauth2_redirect_uri: http://localhost:8080/dashboard
+  oauth2_redirect_uri: http://localhost:8180/dashboard

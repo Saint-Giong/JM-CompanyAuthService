@@ -17,25 +17,26 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import rmit.saintgiong.authapi.internal.dto.CompanyLoginRequestDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationGoogleRequestDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationRequestDto;
-import rmit.saintgiong.authapi.internal.dto.CompanyRegistrationResponseDto;
-import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
+import rmit.saintgiong.authapi.internal.dto.auth.CompanyLoginRequestDto;
+import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationGoogleRequestDto;
+import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationRequestDto;
+import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationResponseDto;
+import rmit.saintgiong.authapi.internal.dto.auth.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.dto.avro.ProfileRegistrationResponseRecord;
 import rmit.saintgiong.authapi.internal.dto.avro.ProfileRegistrationSentRecord;
-import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
-import rmit.saintgiong.authapi.internal.dto.common.TokenClaimsDto;
+import rmit.saintgiong.shared.type.CookieType;
+import rmit.saintgiong.shared.token.TokenPairDto;
+import rmit.saintgiong.shared.token.TokenClaimsDto;
 import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.type.KafkaTopic;
-import rmit.saintgiong.authapi.internal.type.Role;
+import rmit.saintgiong.shared.type.Role;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
-import rmit.saintgiong.authservice.common.util.EmailService;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
-import rmit.saintgiong.authservice.common.util.OtpService;
+import rmit.saintgiong.authservice.common.utils.EmailService;
+import rmit.saintgiong.authservice.common.utils.JweTokenService;
+import rmit.saintgiong.authservice.common.utils.OtpService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.model.CompanyAuth;
@@ -53,9 +54,6 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
     private final EmailService emailService;
     private final OtpService otpService;
     private final JweTokenService jweTokenService;
-
-    private static final String AUTH_COOKIE_NAME = "auth_token";
-    private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     private ReplyingKafkaTemplate<String, Object, Object> replyingKafkaTemplate;
 
@@ -209,7 +207,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         }
 
         // Generate token pair for valid credential
-        TokenPairDto tokenPair = jweTokenService.generateTokenPair(
+        TokenPairDto tokenPair = jweTokenService.generateTokenPairDto(
                 companyAuth.getCompanyId(),
                 companyAuth.getEmail(),
                 Role.COMPANY,
@@ -293,20 +291,45 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         log.info("User logged out successfully");
     }
 
-    public void setAuthAndRefreshCookieToBrowser(HttpServletResponse response, String accessToken, String refreshToken, int accessMaxAge, int refreshMaxAge) {
-        Cookie authCookie = new Cookie(AUTH_COOKIE_NAME, accessToken);
-        authCookie.setHttpOnly(true);
-        authCookie.setSecure(true);
-        authCookie.setPath("/");
-        authCookie.setMaxAge(accessMaxAge);
-        response.addCookie(authCookie);
-
-        Cookie refreshCookie = new Cookie(REFRESH_COOKIE_NAME, refreshToken);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(true);
-        refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(refreshMaxAge);
-        response.addCookie(refreshCookie);
+    @Override
+    public void setAuthAndRefreshCookieToBrowser(
+            HttpServletResponse response,
+            String accessToken,
+            String refreshToken,
+            int accessMaxAge,
+            int refreshMaxAge
+    ) {
+        setCookieToBrowser(response, CookieType.ACCESS_TOKEN, accessToken, accessMaxAge);
+        setCookieToBrowser(response, CookieType.REFRESH_TOKEN, refreshToken, refreshMaxAge);
     }
 
+    @Override
+    public void setCookieToBrowser(
+            HttpServletResponse response,
+            String cookieType,
+            String token,
+            int maxAge
+    ) {
+        if (token != null) {
+            Cookie cookie = new Cookie(cookieType, token);
+            cookie.setHttpOnly(true);
+            cookie.setSecure(true);
+            cookie.setPath("/");
+            cookie.setMaxAge(maxAge);
+            response.addCookie(cookie);
+        }
+    }
+
+    @Override
+    public void clearBrowserCookie(
+            HttpServletResponse response,
+            String cookieType
+    ) {
+        Cookie cookie = new Cookie(cookieType, "");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
 }

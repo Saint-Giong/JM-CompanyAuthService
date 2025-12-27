@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.dto;
+package rmit.saintgiong.authapi.internal.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

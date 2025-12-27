@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.common.util;
+package rmit.saintgiong.authservice.common.utils;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

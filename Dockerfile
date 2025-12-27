@@ -49,7 +49,7 @@ WORKDIR /app
 COPY --from=builder /app/CompanyAuthService/target/*.jar app.jar     
 
 # Expose the default Spring Boot port (you can override in compose)  
-EXPOSE 8080
+EXPOSE 8180
 
 # Run the application
 ENTRYPOINT ["java","-jar","/app/app.jar"]

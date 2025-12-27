@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.dto;
+package rmit.saintgiong.authapi.internal.dto.refresh;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,13 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO for OTP verification response.
+ * DTO for refresh token response.
+ * Contains the result of token refresh operation.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OtpVerificationResponseDto {
+public class RefreshTokenResponseDto {
     private boolean success;
     private String message;
 }

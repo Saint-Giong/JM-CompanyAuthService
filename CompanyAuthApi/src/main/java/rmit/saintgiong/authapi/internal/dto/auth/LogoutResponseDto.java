@@ -1,19 +1,19 @@
-package rmit.saintgiong.authapi.internal.dto;
+package rmit.saintgiong.authapi.internal.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO for logout response.
+ * Contains the result of logout operation.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoginServiceDto {
+public class LogoutResponseDto {
     private boolean success;
-    private boolean isActivated;
     private String message;
-    private String accessToken;
-    private String refreshToken;
-    private String companyId;
 }

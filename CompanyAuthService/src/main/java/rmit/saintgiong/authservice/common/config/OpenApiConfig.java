@@ -17,7 +17,6 @@ import java.util.List;
 // OpenAPI/Swagger configuration for API documentation.
 @Configuration
 public class OpenApiConfig {
-
 //    @Value("${server.port:8080}") should follow docker port mapping
     private String serverPort = "8180";
 

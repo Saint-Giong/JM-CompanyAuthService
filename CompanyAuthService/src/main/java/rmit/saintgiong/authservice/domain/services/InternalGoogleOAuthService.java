@@ -11,13 +11,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
-import rmit.saintgiong.authapi.internal.type.Role;
-import rmit.saintgiong.authapi.internal.dto.common.TokenPairDto;
+import rmit.saintgiong.shared.type.Role;
+import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
-import rmit.saintgiong.authservice.common.util.JweTokenService;
+import rmit.saintgiong.authservice.common.utils.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 
@@ -40,19 +39,17 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
     @Value("${google.oauth2_redirect_uri:http://localhost:8180/dashboard}")
     private String redirectLoginUri;
 
-    @Value("${jwe.register-token-ttl-seconds:300}")  // Default: 5 minutes
-    private long registerTokenTtlSeconds;
+    @Value("${jwe.register-token-ttl-seconds:300}")
+    private long tempTokenTtlSeconds;
 
     private final CompanyAuthRepository companyAuthRepository;
-    private final InternalCompanyAuthInterface internalCompanyAuthInterface;
     private final JweTokenService jweTokenService;
 
     private static final GsonFactory GSON_FACTORY = new GsonFactory().getDefaultInstance();
     private static final NetHttpTransport NET_HTTP_TRANSPORT = new NetHttpTransport();
 
-    public InternalGoogleOAuthService(CompanyAuthRepository companyAuthRepository, InternalCompanyAuthInterface internalCompanyAuthInterface, JweTokenService jweTokenService) {
+    public InternalGoogleOAuthService(CompanyAuthRepository companyAuthRepository, JweTokenService jweTokenService) {
         this.companyAuthRepository = companyAuthRepository;
-        this.internalCompanyAuthInterface = internalCompanyAuthInterface;
         this.jweTokenService = jweTokenService;
     }
 
@@ -73,8 +70,8 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
 
         if (savedCompany.isEmpty()) {
             // Has no email account --> Register
-            String registerToken = jweTokenService.generateRegistrationTokenForGoogleAuth(googleEmail, googleId);
-            return new GoogleOAuthResponseDto(null, registerToken, registerTokenTtlSeconds, googleEmail, googleName);
+            String tempToken = jweTokenService.generateTempTokenForGoogleAuth(googleEmail, googleId);
+            return new GoogleOAuthResponseDto(null, tempToken, tempTokenTtlSeconds, googleEmail, googleName);
         }
 
         // Has email but no sso --> Duplicated
@@ -86,7 +83,7 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
             throw new InvalidCredentialsException(String.format(String.format("Google ID does not match the stored Google ID for the email address: %s. This account is linked to a different Google account.", googleEmail)));
         }
         // Has email and sso --> Login
-        TokenPairDto tokenPairDto = jweTokenService.generateTokenPair(
+        TokenPairDto tokenPairDto = jweTokenService.generateTokenPairDto(
                 savedCompany.get().getCompanyId(),
                 savedCompany.get().getEmail(),
                 Role.COMPANY,

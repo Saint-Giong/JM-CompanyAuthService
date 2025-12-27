@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.controller;
+package rmit.saintgiong.authservice.domain.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,9 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import rmit.saintgiong.authapi.internal.dto.*;
-import rmit.saintgiong.authapi.internal.dto.common.ErrorResponseDto;
-import rmit.saintgiong.authapi.internal.dto.LoginServiceDto;
+import rmit.saintgiong.authapi.internal.dto.auth.*;
+import rmit.saintgiong.authapi.internal.dto.otp.OtpVerificationRequestDto;
+import rmit.saintgiong.authapi.internal.dto.otp.OtpVerificationResponseDto;
+import rmit.saintgiong.authapi.internal.dto.refresh.RefreshTokenResponseDto;
+import rmit.saintgiong.shared.type.CookieType;
+import rmit.saintgiong.shared.response.ErrorResponseDto;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
@@ -30,12 +33,7 @@ import java.util.concurrent.Callable;
 @Tag(name = "Company Authentication", description = "APIs for company registration, authentication, and account management")
 public class CompanyAuthController {
     private final JweConfig jweConfig;
-
     private final InternalCompanyAuthService internalCompanyAuthService;
-
-    private static final String AUTH_COOKIE_NAME = "auth_token";
-    private static final String REFRESH_COOKIE_NAME = "refresh_token";
-
     private final CompanyAuthMapper companyAuthMapper;
 
     @Operation(
@@ -69,7 +67,6 @@ public class CompanyAuthController {
                     )
             )
     })
-
     @PostMapping("/register")
     public Callable<ResponseEntity<CompanyRegistrationResponseDto>> registerCompanyWithEmailAndPassword(
             @Valid @RequestBody CompanyRegistrationRequestDto registrationDto
@@ -118,7 +115,6 @@ public class CompanyAuthController {
                     jweConfig.getAccessTokenTtlSeconds(),
                     jweConfig.getRefreshTokenTtlSeconds()
             );
-
             CompanyLoginResponseDto companyLoginResponseDto = companyAuthMapper.fromLoginServiceDto(loginResponse);
 
             return ResponseEntity
@@ -154,7 +150,7 @@ public class CompanyAuthController {
     @PostMapping("/verify-account")
     public Callable<ResponseEntity<OtpVerificationResponseDto>> verifyAccount(
             @Valid @RequestBody OtpVerificationRequestDto otpDto,
-            @CookieValue(name = AUTH_COOKIE_NAME, required = false) String authToken,
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken,
             HttpServletResponse response
     ) {
         return () -> {
@@ -165,7 +161,7 @@ public class CompanyAuthController {
                 throw new InvalidTokenException("Authentication token not found. Please login first.");
             }
 
-            // Validate and extract company ID from the token via service layer
+            // Validate and extract company ID from the token via the service layer
             UUID companyId = internalCompanyAuthService.validateAccessTokenAndGetCompanyId(authToken);
 
             // Verify OTP and activate an account
@@ -205,7 +201,9 @@ public class CompanyAuthController {
             )
     })
     @PostMapping("/resend-otp")
-    public Callable<ResponseEntity<OtpVerificationResponseDto>> resendOtp(@CookieValue(name = AUTH_COOKIE_NAME, required = false) String authToken) {
+    public Callable<ResponseEntity<OtpVerificationResponseDto>> resendOtp(
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken
+    ) {
         return () -> {
 
             //TODO: use filter and security to check for cookie and get id from authenticated session instead
@@ -213,8 +211,8 @@ public class CompanyAuthController {
             if (authToken == null || authToken.isEmpty()) {
                 throw new InvalidTokenException("Authentication token not found. Please login first.");
             }
-            log.info("Resending OTP for company with token:");
-            // Validate and extract company ID from the token via service layer
+            log.info("Resending OTP for company with token.");
+            // Validate and extract company ID from the token via the service layer
             UUID companyId = internalCompanyAuthService.validateAccessTokenAndGetCompanyId(authToken);
 
             // Resend OTP
@@ -256,7 +254,7 @@ public class CompanyAuthController {
     })
     @PostMapping("/refresh-token")
     public Callable<ResponseEntity<RefreshTokenResponseDto>> refreshToken(
-            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+            @CookieValue(name = CookieType.REFRESH_TOKEN, required = false) String refreshToken,
             HttpServletResponse response
     ) {
         return () -> {
@@ -300,8 +298,8 @@ public class CompanyAuthController {
     })
     @PostMapping("/logout")
     public Callable<ResponseEntity<LogoutResponseDto>> logout(
-            @CookieValue(name = AUTH_COOKIE_NAME, required = false) String accessToken,
-            @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshToken,
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String accessToken,
+            @CookieValue(name = CookieType.REFRESH_TOKEN, required = false) String refreshToken,
             HttpServletResponse response) {
         return () -> {
             // Revoke tokens via service layer (blocklist access token, remove refresh token)
@@ -316,7 +314,6 @@ public class CompanyAuthController {
             );
         };
     }
-
 
     @GetMapping("/hello")
     public String hello() {

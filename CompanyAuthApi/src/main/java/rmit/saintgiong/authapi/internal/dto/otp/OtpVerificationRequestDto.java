@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.dto;
+package rmit.saintgiong.authapi.internal.dto.otp;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

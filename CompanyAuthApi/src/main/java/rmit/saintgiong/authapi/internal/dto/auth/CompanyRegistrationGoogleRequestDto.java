@@ -1,12 +1,10 @@
-package rmit.saintgiong.authapi.internal.dto;
+package rmit.saintgiong.authapi.internal.dto.auth;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.annotation.Nullable;
 
 @Data
 @Builder

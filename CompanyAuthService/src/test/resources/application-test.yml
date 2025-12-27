@@ -5,7 +5,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
   datasource:
-    url: jdbc:postgresql://localhost:5433/auth_db
+    url: jdbc:postgresql://localhost:5533/auth_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
