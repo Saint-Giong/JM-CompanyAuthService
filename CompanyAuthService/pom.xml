@@ -182,12 +182,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.crac</groupId>
-            <artifactId>crac</artifactId>
-            <version>1.4.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-avro-serializer</artifactId>
             <version>7.6.1</version>

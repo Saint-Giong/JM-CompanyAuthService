@@ -64,7 +64,7 @@ kafka:
 
 jwe:
   issuer: JM_BACKEND
-  register-token-ttl-seconds: 300
+  temp-token-ttl-seconds: 300
   access-token-ttl-seconds: 900
   refresh-token-ttl-seconds: 604800
 

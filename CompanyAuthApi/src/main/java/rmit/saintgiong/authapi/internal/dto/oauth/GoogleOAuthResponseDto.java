@@ -9,7 +9,6 @@ import rmit.saintgiong.shared.token.TokenPairDto;
 public class GoogleOAuthResponseDto {
     private TokenPairDto tokenPairDto;
     private String tempToken;
-    // Access token expiration time in seconds.
     private long tempTokenExpiresIn;
 
     private String email;
