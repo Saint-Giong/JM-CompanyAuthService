@@ -8,16 +8,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
 import rmit.saintgiong.shared.type.Role;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.utils.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
-import rmit.saintgiong.authservice.domain.services.InternalCompanyAuthService;
 import rmit.saintgiong.authservice.domain.services.InternalGoogleOAuthService;
 
 import java.util.*;
@@ -31,8 +30,6 @@ class InternalGoogleOAuthServiceTest {
 
     @Mock
     private CompanyAuthRepository companyAuthRepository;
-    @Mock
-    private InternalCompanyAuthService internalCompanyAuthService;
     @Mock
     private JweTokenService jweTokenService;
     @Mock
@@ -55,14 +52,16 @@ class InternalGoogleOAuthServiceTest {
         GoogleIdToken.Payload payload = payload("google-id", "new@company.com", true, "New User");
         doReturn(payload).when(internalGoogleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
         when(companyAuthRepository.findByEmail("new@company.com")).thenReturn(Optional.empty());
-        when(jweTokenService.generateTempTokenForGoogleAuth("new@company.com", "google-id"))
-                .thenReturn("temp-token");
+        when(jweTokenService.generateTempTokenForGoogleAuth("new@company.com", "google-id")).thenReturn("temp-token");
+
+        // FIX: Add missing mock for jweConfig.getTempTokenTtlSeconds()
+        when(jweConfig.getTempTokenTtlSeconds()).thenReturn(300);
 
         GoogleOAuthResponseDto result = internalGoogleOAuthService.authenticateGoogleUser(code);
 
         assertNull(result.getTokenPairDto());
         assertEquals("temp-token", result.getTempToken());
-        assertEquals(300L, result.getTempTokenExpiresIn());
+        assertEquals(300, result.getTempTokenExpiresIn());
         assertEquals("new@company.com", result.getEmail());
         assertEquals("New User", result.getName());
     }
@@ -79,6 +78,21 @@ class InternalGoogleOAuthServiceTest {
 
         assertThrows(CompanyAccountAlreadyExisted.class, () -> internalGoogleOAuthService.authenticateGoogleUser(code));
         verify(jweTokenService, never()).generateTempTokenForGoogleAuth(anyString(), anyString());
+    }
+
+    @Test
+    void authenticateGoogleUser_throwsInvalidCredentials_whenSsoTokenMismatch() throws Exception {
+        // NEW TEST: Cover the case where SSO token exists but doesn't match
+        String code = "mismatch-code";
+        GoogleIdToken.Payload payload = payload("different-google-id", "mismatch@company.com", true, "Mismatch User");
+        doReturn(payload).when(internalGoogleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+
+        CompanyAuthEntity entity = mock(CompanyAuthEntity.class);
+        when(entity.getSsoToken()).thenReturn("original-google-id"); // Different from payload's "different-google-id"
+        when(companyAuthRepository.findByEmail("mismatch@company.com")).thenReturn(Optional.of(entity));
+
+        assertThrows(InvalidCredentialsException.class, () -> internalGoogleOAuthService.authenticateGoogleUser(code));
+        verify(jweTokenService, never()).generateTokenPairDto(any(), anyString(), any(), anyBoolean());
     }
 
     @Test
@@ -114,6 +128,16 @@ class InternalGoogleOAuthServiceTest {
         assertNull(result.getName());
     }
 
+    @Test
+    void authenticateGoogleUser_throwsException_whenEmailNotVerified() throws Exception {
+        // NEW TEST: Cover the case where Google email is not verified
+        String code = "unverified-code";
+        GoogleIdToken.Payload payload = payload("google-id", "unverified@company.com", false, "Unverified User");
+        doReturn(payload).when(internalGoogleOAuthService).verifyAndGetGoogleIdTokenPayload(code);
+
+        assertThrows(IllegalArgumentException.class, () -> internalGoogleOAuthService.authenticateGoogleUser(code));
+        verify(companyAuthRepository, never()).findByEmail(anyString());
+    }
 
     private GoogleIdToken.Payload payload(String sub, String email, boolean verified, String name) {
         GoogleIdToken.Payload payload = new GoogleIdToken.Payload();
