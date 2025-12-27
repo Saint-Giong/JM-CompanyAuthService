@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
 import rmit.saintgiong.shared.type.Role;
@@ -34,6 +35,8 @@ class InternalGoogleOAuthServiceTest {
     private InternalCompanyAuthService internalCompanyAuthService;
     @Mock
     private JweTokenService jweTokenService;
+    @Mock
+    private JweConfig jweConfig;
 
     private InternalGoogleOAuthService internalGoogleOAuthService;
 
@@ -41,9 +44,9 @@ class InternalGoogleOAuthServiceTest {
     void setUp() {
         internalGoogleOAuthService = Mockito.spy(new InternalGoogleOAuthService(
                 companyAuthRepository,
-                jweTokenService
+                jweTokenService,
+                jweConfig
         ));
-        ReflectionTestUtils.setField(internalGoogleOAuthService, "registerTokenTtlSeconds", 300L);
     }
 
     @Test

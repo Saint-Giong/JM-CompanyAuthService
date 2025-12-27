@@ -13,12 +13,11 @@ import java.util.Base64;
 @Component
 public class RsaKeyLoader {
 
-    @Value("${PUBLIC_KEY_B64:}")
+    @Value("${key.public-key-b64:}")
     private String publicKeyB64Prop;
 
-    @Value("${PRIVATE_KEY_B64:}")
+    @Value("${key.private-key-b64:}")
     private String privateKeyB64Prop;
-
 
     /**
      * Loads an RSA public key from the {@code PUBLIC_KEY_B64} environment variable.
@@ -28,12 +27,6 @@ public class RsaKeyLoader {
      * @throws Exception If key parsing fails
      */
     public RSAPublicKey loadPublicKey() throws Exception {
-//        String publicKeyB64 = System.getenv("PUBLIC_KEY_B64");
-//        if (publicKeyB64 == null || publicKeyB64.isBlank()) {
-//            throw new IllegalStateException("PUBLIC_KEY_B64 not set");
-//        }
-//        byte[] encoded = Base64.getDecoder().decode(publicKeyB64);
-
         byte[] encoded = Base64.getDecoder().decode(publicKeyB64Prop);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
@@ -41,18 +34,12 @@ public class RsaKeyLoader {
     }
 
     /**
-     * Loads an RSA private key from PEM-encoded string.
+     * Loads an RSA private key from a PEM-encoded string.
      *
      * @return The RSA private key
      * @throws Exception If key parsing fails
      */
     public RSAPrivateKey loadPrivateKey() throws Exception {
-//        String privateKeyB64 = System.getenv("PRIVATE_KEY_B64");
-//        if (privateKeyB64 == null || privateKeyB64.isBlank()) {
-//            throw new IllegalStateException("PRIVATE_KEY_B64 not set");
-//        }
-//        byte[] encoded = Base64.getDecoder().decode(privateKeyB64);
-
         byte[] encoded = Base64.getDecoder().decode(privateKeyB64Prop);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);

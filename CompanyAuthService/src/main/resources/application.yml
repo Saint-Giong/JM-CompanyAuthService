@@ -1,5 +1,5 @@
 server:
-  port: 8180
+  port: ${SERVER_PORT:8180}
 
 spring:
   application:
@@ -19,8 +19,8 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: 6379
       password: ${REDIS_PASSWORD:}
+      port: 6479
       timeout: 2000ms
   security:
     oauth2:
@@ -54,6 +54,14 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8070/eureka}
 
+key:
+  public-key-b64: ${PUBLIC_KEY_B64:}
+  private-key-b64: ${PRIVATE_KEY_B64:}
+
+kafka:
+  kafka-host-url: ${KAFKA_HOST_URL:localhost:9192}
+  schema-registry-host-url: ${SCHEMA_REGISTRY_HOST_URL:http://localhost:9191}
+
 jwe:
   issuer: JM_BACKEND
   register-token-ttl-seconds: 300
@@ -66,6 +74,9 @@ otp:
   resend-cooldown-seconds: 60    # cooldown between resend requests
   max-per-hour: 5                # max OTPs per hour per company
 
+google:
+  oauth2-redirect-uri: http://localhost:8180/dashboard
+
 # OpenAPI/Swagger Configuration
 springdoc:
   api-docs:
@@ -77,6 +88,3 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
   show-actuator: false
-
-google:
-  oauth2_redirect_uri: http://localhost:8180/dashboard
