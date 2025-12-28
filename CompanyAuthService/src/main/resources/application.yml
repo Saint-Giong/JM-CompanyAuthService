@@ -20,7 +20,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       password: ${REDIS_PASSWORD:}
-      port: 6479
+      port: ${REDIS_PORT:6479}
       timeout: 2000ms
   security:
     oauth2:
