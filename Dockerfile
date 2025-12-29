@@ -2,20 +2,21 @@
 FROM eclipse-temurin:17-jdk AS builder
 WORKDIR /app
 
-# --- Localize DTO ---
-COPY SG-SharedDtoPackage/pom.xml ./SG-SharedDtoPackage/pom.xml
-COPY SG-SharedDtoPackage/src ./SG-SharedDtoPackage/src
-COPY SG-SharedDtoPackage/.mvn ./SG-SharedDtoPackage/.mvn
-COPY SG-SharedDtoPackage/mvnw ./SG-SharedDtoPackage/mvnw
-
-RUN --mount=type=cache,target=/root/.m2 \
-    cd SG-SharedDtoPackage && \
-    ./mvnw clean install -DskipTests
+## --- Localize DTO ---
+#COPY SG-SharedDtoPackage/pom.xml ./SG-SharedDtoPackage/pom.xml
+#COPY SG-SharedDtoPackage/src ./SG-SharedDtoPackage/src
+#COPY SG-SharedDtoPackage/.mvn ./SG-SharedDtoPackage/.mvn
+#COPY SG-SharedDtoPackage/mvnw ./SG-SharedDtoPackage/mvnw
+#
+#RUN --mount=type=cache,target=/root/.m2 \
+#    cd SG-SharedDtoPackage && \
+#    ./mvnw clean install -DskipTests
 # --------------------
 
 # Maven runner
 COPY JM-CompanyAuthService/mvnw .
 COPY JM-CompanyAuthService/.mvn .mvn
+RUN chmod +x mvnw
 
 # Dependency
 COPY JM-CompanyAuthService/pom.xml ./pom.xml
