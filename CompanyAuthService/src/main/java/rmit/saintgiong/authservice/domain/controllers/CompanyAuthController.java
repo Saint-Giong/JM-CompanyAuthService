@@ -276,6 +276,7 @@ public class CompanyAuthController {
                     RefreshTokenResponseDto.builder()
                             .success(true)
                             .message("Token refreshed successfully.")
+                            .companyId(tokenResponse.getCompanyId())
                             .build()
             );
         };

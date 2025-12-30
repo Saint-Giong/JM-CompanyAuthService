@@ -12,6 +12,7 @@ import rmit.saintgiong.authapi.internal.dto.auth.CompanyRegistrationResponseDto;
 import rmit.saintgiong.shared.response.GenericResponseDto;
 import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
+import rmit.saintgiong.authapi.internal.dto.oauth.GoogleLoginResponseDto;
 import rmit.saintgiong.authapi.internal.dto.oauth.GoogleRegistrationPrefillDto;
 import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
@@ -66,9 +67,15 @@ public class GoogleOAuthController {
                     );
                 }
 
+                // Return companyId and email for existing user login
+                GoogleLoginResponseDto loginResponse = GoogleLoginResponseDto.builder()
+                        .companyId(oauthResponseDto.getCompanyId())
+                        .email(oauthResponseDto.getEmail())
+                        .build();
+
                 return ResponseEntity
                         .status(HttpStatus.OK)
-                        .body(new GenericResponseDto<>(true, "", null));
+                        .body(new GenericResponseDto<>(true, "", loginResponse));
             }
 
             if (oauthResponseDto.getTempToken() != null) {

@@ -274,6 +274,9 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
 
     @Override
     public LoginServiceDto refreshTokenPair(String refreshToken) {
+        // Get claims from the refresh token to extract companyId
+        TokenClaimsDto claims = jweTokenService.getTokenClaimsDtoDecryptedFromTokenString(refreshToken);
+        
         TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
 
         return LoginServiceDto.builder()
@@ -282,6 +285,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                 .message("Token refreshed successfully.")
                 .accessToken(tokenPair.getAccessToken())
                 .refreshToken(tokenPair.getRefreshToken())
+                .companyId(claims.getSub().toString())
                 .build();
     }
 

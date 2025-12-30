@@ -16,4 +16,5 @@ import lombok.NoArgsConstructor;
 public class RefreshTokenResponseDto {
     private boolean success;
     private String message;
+    private String companyId;
 }

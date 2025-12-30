@@ -86,7 +86,13 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
                 savedCompany.get().isActivated()
         );
 
-        return new GoogleOAuthResponseDto(tokenPairDto, null, savedCompany.get().getEmail(), null);
+        return new GoogleOAuthResponseDto(
+                tokenPairDto, 
+                null, 
+                savedCompany.get().getCompanyId().toString(),
+                savedCompany.get().getEmail(), 
+                null
+        );
     }
 
     @Override
