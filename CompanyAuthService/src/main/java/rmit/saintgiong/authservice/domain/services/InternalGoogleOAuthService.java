@@ -46,7 +46,7 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
     private final JweTokenService jweTokenService;
     private final JweConfig jweConfig;
 
-    private static final GsonFactory GSON_FACTORY = new GsonFactory().getDefaultInstance();
+    private static final GsonFactory GSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final NetHttpTransport NET_HTTP_TRANSPORT = new NetHttpTransport();
 
     @Override
@@ -67,7 +67,13 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
         if (savedCompany.isEmpty()) {
             // Has no email account --> Register
             String tempToken = jweTokenService.generateTempTokenForGoogleAuth(googleEmail, googleId);
-            return new GoogleOAuthResponseDto(null, tempToken, jweConfig.getTempTokenTtlSeconds(), googleEmail, googleName);
+
+            return GoogleOAuthResponseDto.builder()
+                    .tempToken(tempToken)
+                    .tempTokenExpiresIn(jweConfig.getTempTokenTtlSeconds())
+                    .email(googleEmail)
+                    .name(googleName)
+                    .build();
         }
 
         // Has email but no sso --> Duplicated
@@ -86,13 +92,11 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
                 savedCompany.get().isActivated()
         );
 
-        return new GoogleOAuthResponseDto(
-                tokenPairDto, 
-                null, 
-                savedCompany.get().getCompanyId().toString(),
-                savedCompany.get().getEmail(), 
-                null
-        );
+        return GoogleOAuthResponseDto.builder()
+                .tokenPairDto(tokenPairDto)
+                .companyId(savedCompany.get().getCompanyId().toString())
+                .email(savedCompany.get().getEmail())
+                .build();
     }
 
     @Override
