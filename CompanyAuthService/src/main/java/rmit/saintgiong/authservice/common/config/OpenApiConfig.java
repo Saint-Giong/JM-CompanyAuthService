@@ -19,7 +19,7 @@ import java.util.List;
 @Configuration
 @OpenAPIDefinition(servers = {
         @io.swagger.v3.oas.annotations.servers.Server(url = "/v1/auth/", description = "To Gateway Endpoint"),
-        @Server(url = "http://localhost:8180", description = "Direct Service URL")
+        @Server(url = "http://localhost:${server.port}", description = "Direct Auth URL")
 })
 public class OpenApiConfig {
 
