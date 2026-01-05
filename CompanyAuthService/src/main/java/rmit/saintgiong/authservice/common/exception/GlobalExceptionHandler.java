@@ -159,23 +159,6 @@ public class GlobalExceptionHandler {
                 .body(errorResponseDto);
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErrorResponseDto> handleIllegalStateException(
-            IllegalStateException exception,
-            WebRequest request
-    ) {
-        ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
-                .apiPath(request.getDescription(false).replace("uri=", ""))
-                .errorCode(HttpStatus.BAD_REQUEST)
-                .message(exception.getMessage())
-                .timeStamp(LocalDateTime.now())
-                .build();
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(errorResponseDto);
-    }
-
     @ExceptionHandler(TokenReuseException.class)
     public ResponseEntity<ErrorResponseDto> handleTokenReuseException(
             TokenReuseException exception,
@@ -198,4 +181,20 @@ public class GlobalExceptionHandler {
                 .body(errorResponseDto);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalStateException(
+            IllegalStateException exception,
+            WebRequest request
+    ) {
+        ErrorResponseDto errorResponseDto = ErrorResponseDto.builder()
+                .apiPath(request.getDescription(false).replace("uri=", ""))
+                .errorCode(HttpStatus.BAD_REQUEST)
+                .message(exception.getMessage())
+                .timeStamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponseDto);
+    }
 }

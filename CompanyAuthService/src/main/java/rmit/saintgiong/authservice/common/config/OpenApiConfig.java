@@ -1,5 +1,7 @@
 package rmit.saintgiong.authservice.common.config;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -7,7 +9,6 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +17,11 @@ import java.util.List;
 
 // OpenAPI/Swagger configuration for API documentation.
 @Configuration
+@OpenAPIDefinition(servers = {
+        @io.swagger.v3.oas.annotations.servers.Server(url = "/v1/auth/", description = "To Gateway Endpoint"),
+        @Server(url = "http://localhost:8180", description = "Direct Service URL")
+})
 public class OpenApiConfig {
-//    @Value("${server.port:8080}") should follow docker port mapping
-    private String serverPort = "8180";
 
     @Bean
     public OpenAPI customOpenAPI() {

@@ -67,7 +67,7 @@ public class JweAuthRequestFilter extends OncePerRequestFilter {
         try {
             if (tokenValue == null || tokenValue.trim().isEmpty()) return null;
 
-            TokenClaimsDto tokenClaimsDto = jweTokenService.getTokenClaimsDtoDecryptedFromTokenString(tokenValue);
+            TokenClaimsDto tokenClaimsDto = jweTokenService.validateAccessToken(tokenValue);
 
             if (tokenClaimsDto != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 SimpleGrantedAuthority auth = new SimpleGrantedAuthority("ROLE_" + tokenClaimsDto.getRole().name() + (isRefresh ? "_REFRESH" : ""));
