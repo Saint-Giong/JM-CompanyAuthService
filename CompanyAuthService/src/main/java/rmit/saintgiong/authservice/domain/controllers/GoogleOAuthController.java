@@ -3,6 +3,8 @@ package rmit.saintgiong.authservice.domain.controllers;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import lombok.AllArgsConstructor;
@@ -15,6 +17,7 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRespo
 import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleAuthResponseDto;
 import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.shared.response.GenericResponseDto;
 import rmit.saintgiong.shared.type.CookieType;
 
@@ -58,11 +61,19 @@ public class GoogleOAuthController {
 
     @PostMapping("/google/link-google")
     public Callable<ResponseEntity<GenericResponseDto<?>>> linkGoogleToAccount(
-            @Valid @RequestBody CompanyLinkGoogleRequestDto requestDto,
-            @RequestParam("code") String code
+            @RequestParam("code") String code,
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken
+
     ) {
         return () -> {
-            internalGoogleOAuthInterface.handleLinkGoogleToAccount(requestDto.getCompanyId(), code, true, false);
+            if (authToken == null || authToken.isEmpty()) {
+                throw new InvalidTokenException("Authentication token not found. Please login first.");
+            }
+
+            // Validate and extract company ID from the token via the service layer
+            UUID companyId = internalCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+
+            internalGoogleOAuthInterface.handleLinkGoogleToAccount(companyId.toString(), code, true, false);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(new GenericResponseDto<>(true, "Google account linked successfully", null));
@@ -71,11 +82,18 @@ public class GoogleOAuthController {
 
     @PostMapping("/google/relink-google")
     public Callable<ResponseEntity<GenericResponseDto<?>>> relinkNewGoogleToAccount(
-            @Valid @RequestBody CompanyLinkGoogleRequestDto requestDto,
-            @RequestParam("code") String code
+            @RequestParam("code") String code,
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken
     ) {
         return () -> {
-            internalGoogleOAuthInterface.handleLinkGoogleToAccount(requestDto.getCompanyId(), code, false, true);
+            if (authToken == null || authToken.isEmpty()) {
+                throw new InvalidTokenException("Authentication token not found. Please login first.");
+            }
+
+            // Validate and extract company ID from the token via the service layer
+            UUID companyId = internalCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+
+            internalGoogleOAuthInterface.handleLinkGoogleToAccount(companyId.toString(),  code, false, true);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(new GenericResponseDto<>(true, "Google account re-linked successfully", null));

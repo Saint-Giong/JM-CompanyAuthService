@@ -35,7 +35,7 @@ import rmit.saintgiong.shared.type.CookieType;
 @Tag(name = "Company Authentication", description = "APIs for company registration, authentication, and account management")
 public class CompanyAuthController {
     private final JweConfig jweConfig;
-    private final InternalCompanyAuthInterface internalAuthInterface;
+    private final InternalCompanyAuthInterface internalCompanyAuthInterface;
     private final CompanyAuthMapper companyAuthMapper;
 
     @Operation(
@@ -74,7 +74,7 @@ public class CompanyAuthController {
             @Valid @RequestBody CompanyRegistrationRequestDto registrationDto
     ) {
         return () -> {
-            CompanyRegistrationResponseDto response = internalAuthInterface.registerCompany(registrationDto);
+            CompanyRegistrationResponseDto response = internalCompanyAuthInterface.registerCompany(registrationDto);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(response);
@@ -109,8 +109,8 @@ public class CompanyAuthController {
             @Valid @RequestBody CompanyLoginRequestDto loginDto,
             HttpServletResponse response) {
         return () -> {
-            LoginServiceDto loginResponse = internalAuthInterface.authenticateWithEmailAndPassword(loginDto);
-            internalAuthInterface.setAuthAndRefreshCookieToBrowser(
+            LoginServiceDto loginResponse = internalCompanyAuthInterface.authenticateWithEmailAndPassword(loginDto);
+            internalCompanyAuthInterface.setAuthAndRefreshCookieToBrowser(
                     response,
                     loginResponse.getAccessToken(),
                     loginResponse.getRefreshToken(),
@@ -163,10 +163,10 @@ public class CompanyAuthController {
             }
 
             // Validate and extract company ID from the token via the service layer
-            UUID companyId = internalAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+            UUID companyId = internalCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
 
             // Verify OTP and activate an account
-            internalAuthInterface.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
+            internalCompanyAuthInterface.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
 
             return ResponseEntity.ok(
                     OtpVerificationResponseDto.builder()
@@ -214,10 +214,10 @@ public class CompanyAuthController {
             }
             log.info("Resending OTP for company with token.");
             // Validate and extract company ID from the token via the service layer
-            UUID companyId = internalAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+            UUID companyId = internalCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
 
             // Resend OTP
-            internalAuthInterface.resendOtp(companyId);
+            internalCompanyAuthInterface.resendOtp(companyId);
 
             return ResponseEntity.ok(
                     OtpVerificationResponseDto.builder()
@@ -263,8 +263,8 @@ public class CompanyAuthController {
             }
 
             // Refresh the token pair (includes reuse detection)
-            LoginServiceDto tokenResponse = internalAuthInterface.refreshTokenPair(refreshToken);
-            internalAuthInterface.setAuthAndRefreshCookieToBrowser(
+            LoginServiceDto tokenResponse = internalCompanyAuthInterface.refreshTokenPair(refreshToken);
+            internalCompanyAuthInterface.setAuthAndRefreshCookieToBrowser(
                     response,
                     tokenResponse.getAccessToken(),
                     tokenResponse.getRefreshToken(),
@@ -304,8 +304,8 @@ public class CompanyAuthController {
             HttpServletResponse response) {
         return () -> {
             // Revoke tokens via service layer (blocklist access token, remove refresh token)
-            internalAuthInterface.logout(accessToken, refreshToken);
-            internalAuthInterface.setAuthAndRefreshCookieToBrowser(response, accessToken, refreshToken, 0, 0);
+            internalCompanyAuthInterface.logout(accessToken, refreshToken);
+            internalCompanyAuthInterface.setAuthAndRefreshCookieToBrowser(response, accessToken, refreshToken, 0, 0);
 
             return ResponseEntity.ok(
                     LogoutResponseDto.builder()
@@ -349,10 +349,18 @@ public class CompanyAuthController {
     })
     @PostMapping("/set-password")
     public Callable<ResponseEntity<GenericResponseDto<?>>> setInitialPassword(
-            @Valid @RequestBody CompanySetPasswordRequestDto requestDto
+            @Valid @RequestBody CompanySetPasswordRequestDto requestDto,
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken
     ) {
         return () -> {
-            internalAuthInterface.setInitialPassword(requestDto.getCompanyId(), requestDto.getPassword());
+            if (authToken == null || authToken.isEmpty()) {
+                throw new InvalidTokenException("Authentication token not found. Please login first.");
+            }
+
+            // Validate and extract company ID from the token via the service layer
+            UUID companyId = internalCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+
+            internalCompanyAuthInterface.setInitialPassword(companyId.toString(), requestDto.getPassword());
 
             PasswordOperationResponseDto response = PasswordOperationResponseDto.builder()
                     .success(true)
@@ -406,11 +414,19 @@ public class CompanyAuthController {
     })
     @PostMapping("/change-password")
     public Callable<ResponseEntity<GenericResponseDto<?>>> changePassword(
-            @Valid @RequestBody CompanyUpdatePasswordRequestDto requestDto
+            @Valid @RequestBody CompanyUpdatePasswordRequestDto requestDto,
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken
     ) {
         return () -> {
-            internalAuthInterface.changePassword(
-                    requestDto.getCompanyId(),
+            if (authToken == null || authToken.isEmpty()) {
+                throw new InvalidTokenException("Authentication token not found. Please login first.");
+            }
+
+            // Validate and extract company ID from the token via the service layer
+            UUID companyId = internalCompanyAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
+
+            internalCompanyAuthInterface.changePassword(
+                    companyId.toString(),
                     requestDto.getCurrentPassword(),
                     requestDto.getNewPassword()
             );

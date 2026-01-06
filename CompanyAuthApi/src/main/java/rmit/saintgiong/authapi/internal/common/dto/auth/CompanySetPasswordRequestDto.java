@@ -13,10 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 public class CompanySetPasswordRequestDto {
 
-    @NotNull(message = "Company ID cannot be NULL")
-    @Schema(description = "Company ID", example = "123e4567-e89b-12d3-a456-426614174000")
-    private String companyId;
-
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     @Pattern(
