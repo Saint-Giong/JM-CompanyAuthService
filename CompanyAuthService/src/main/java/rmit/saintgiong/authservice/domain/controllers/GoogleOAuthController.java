@@ -3,23 +3,21 @@ package rmit.saintgiong.authservice.domain.controllers;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.util.concurrent.Callable;
+
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLinkGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationResponseDto;
-import rmit.saintgiong.shared.response.GenericResponseDto;
-import rmit.saintgiong.shared.token.TokenPairDto;
-import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleLoginResponseDto;
-import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleRegistrationPrefillDto;
+import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleAuthResponseDto;
 import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
-import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
+import rmit.saintgiong.shared.response.GenericResponseDto;
 import rmit.saintgiong.shared.type.CookieType;
 
-import java.util.concurrent.Callable;
 
 @RestController
 @AllArgsConstructor
@@ -30,74 +28,57 @@ public class GoogleOAuthController {
     private final InternalGoogleOAuthInterface internalGoogleOAuthInterface;
 
     @GetMapping("/google/redirect-url")
-    public ResponseEntity<GenericResponseDto<?>> getGoogleRedirectUrl() {
+    public ResponseEntity<GenericResponseDto<?>> getGoogleRedirectUrl(
+            boolean isLinking
+    ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(new GenericResponseDto<>(true, "", internalGoogleOAuthInterface.buildGoogleAuthUrl()));
+                .body(new GenericResponseDto<>(true, "", internalGoogleOAuthInterface.buildGoogleAuthUrl(isLinking)));
     }
 
     @GetMapping("/google/auth")
-    public Callable<ResponseEntity<GenericResponseDto<?>>> handleGoogleCallback(
+    public Callable<ResponseEntity<GenericResponseDto<GoogleAuthResponseDto>>> handleGoogleAuthentication(
             HttpServletResponse response,
             @RequestParam("code") String code
     ) {
         return () -> {
-            if (code == null || code.trim().isEmpty()) {
-                throw new InvalidTokenException("Authorization code is missing");
-            }
+            GoogleAuthResponseDto responseDto = internalGoogleOAuthInterface.handleGoogleAuthentication(response, code);
 
-            GoogleOAuthResponseDto oauthResponseDto = internalGoogleOAuthInterface.authenticateGoogleUser(code);
-            TokenPairDto tokenPairDto = oauthResponseDto.getTokenPairDto();
-
-            // login is ok
-            if (tokenPairDto != null) {
-                internalCompanyAuthInterface.setCookieToBrowser(
-                        response,
-                        CookieType.ACCESS_TOKEN,
-                        tokenPairDto.getAccessToken(),
-                        (int) tokenPairDto.getAccessTokenExpiresIn()
-                );
-
-                if (tokenPairDto.getRefreshToken() != null && !tokenPairDto.getRefreshToken().isEmpty()) {
-                    internalCompanyAuthInterface.setCookieToBrowser(
-                            response,
-                            CookieType.REFRESH_TOKEN,
-                            tokenPairDto.getRefreshToken(),
-                            (int) tokenPairDto.getRefreshTokenExpiresIn()
-                    );
-                }
-
-                // Return companyId and email for existing user login
-                GoogleLoginResponseDto loginResponse = GoogleLoginResponseDto.builder()
-                        .companyId(oauthResponseDto.getCompanyId())
-                        .email(oauthResponseDto.getEmail())
-                        .build();
-
+            if (responseDto == null) {
                 return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .body(new GenericResponseDto<>(true, "", loginResponse));
-            }
-
-            if (oauthResponseDto.getTempToken() != null) {
-                internalCompanyAuthInterface.setCookieToBrowser(
-                        response,
-                        CookieType.TEMP_TOKEN,
-                        oauthResponseDto.getTempToken(),
-                        (int) oauthResponseDto.getTempTokenExpiresIn()
-                );
-                GoogleRegistrationPrefillDto prefilledDto = GoogleRegistrationPrefillDto.builder()
-                        .email(oauthResponseDto.getEmail())
-                        .name(oauthResponseDto.getName())
-                        .build();
-
-                return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .body(new GenericResponseDto<>(true, "", prefilledDto));
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(new GenericResponseDto<>(false, "Unable to process Google Authentication", null));
             }
 
             return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(new GenericResponseDto<>(false, "Unable to process Google Authentication", null));
+                    .status(HttpStatus.OK)
+                    .body(new GenericResponseDto<>(true, "", responseDto));
+        };
+    }
+
+    @PostMapping("/google/link-google")
+    public Callable<ResponseEntity<GenericResponseDto<?>>> linkGoogleToAccount(
+            @Valid @RequestBody CompanyLinkGoogleRequestDto requestDto,
+            @RequestParam("code") String code
+    ) {
+        return () -> {
+            internalGoogleOAuthInterface.handleLinkGoogleToAccount(requestDto.getCompanyId(), code, true, false);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new GenericResponseDto<>(true, "Google account linked successfully", null));
+        };
+    }
+
+    @PostMapping("/google/relink-google")
+    public Callable<ResponseEntity<GenericResponseDto<?>>> relinkNewGoogleToAccount(
+            @Valid @RequestBody CompanyLinkGoogleRequestDto requestDto,
+            @RequestParam("code") String code
+    ) {
+        return () -> {
+            internalGoogleOAuthInterface.handleLinkGoogleToAccount(requestDto.getCompanyId(), code, false, true);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new GenericResponseDto<>(true, "Google account re-linked successfully", null));
         };
     }
 

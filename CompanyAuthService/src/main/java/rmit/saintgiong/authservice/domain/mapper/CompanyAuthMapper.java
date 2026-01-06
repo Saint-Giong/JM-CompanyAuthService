@@ -8,6 +8,7 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationReque
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.model.CompanyAuth;
+
 @Mapper(componentModel = "spring")
 public interface CompanyAuthMapper {
 
