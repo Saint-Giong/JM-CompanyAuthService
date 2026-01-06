@@ -16,6 +16,7 @@ WORKDIR /app
 # Maven runner
 COPY JM-CompanyAuthService/mvnw .
 COPY JM-CompanyAuthService/.mvn .mvn
+RUN sed -i 's/\r$//' mvnw
 RUN chmod +x mvnw
 
 # Dependency
