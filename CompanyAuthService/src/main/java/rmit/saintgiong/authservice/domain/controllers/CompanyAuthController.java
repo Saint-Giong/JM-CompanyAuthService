@@ -8,6 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -17,15 +20,14 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.*;
 import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.refresh.RefreshTokenResponseDto;
-import rmit.saintgiong.shared.type.CookieType;
-import rmit.saintgiong.shared.response.ErrorResponseDto;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
-import rmit.saintgiong.authservice.domain.services.InternalCompanyAuthService;
+import rmit.saintgiong.shared.response.ErrorResponseDto;
+import rmit.saintgiong.shared.response.GenericResponseDto;
+import rmit.saintgiong.shared.type.CookieType;
 
-import java.util.UUID;
-import java.util.concurrent.Callable;
 
 @Slf4j
 @RestController
@@ -33,7 +35,7 @@ import java.util.concurrent.Callable;
 @Tag(name = "Company Authentication", description = "APIs for company registration, authentication, and account management")
 public class CompanyAuthController {
     private final JweConfig jweConfig;
-    private final InternalCompanyAuthService internalCompanyAuthService;
+    private final InternalCompanyAuthInterface internalAuthInterface;
     private final CompanyAuthMapper companyAuthMapper;
 
     @Operation(
@@ -72,7 +74,7 @@ public class CompanyAuthController {
             @Valid @RequestBody CompanyRegistrationRequestDto registrationDto
     ) {
         return () -> {
-            CompanyRegistrationResponseDto response = internalCompanyAuthService.registerCompany(registrationDto);
+            CompanyRegistrationResponseDto response = internalAuthInterface.registerCompany(registrationDto);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(response);
@@ -107,8 +109,8 @@ public class CompanyAuthController {
             @Valid @RequestBody CompanyLoginRequestDto loginDto,
             HttpServletResponse response) {
         return () -> {
-            LoginServiceDto loginResponse = internalCompanyAuthService.authenticateWithEmailAndPassword(loginDto);
-            internalCompanyAuthService.setAuthAndRefreshCookieToBrowser(
+            LoginServiceDto loginResponse = internalAuthInterface.authenticateWithEmailAndPassword(loginDto);
+            internalAuthInterface.setAuthAndRefreshCookieToBrowser(
                     response,
                     loginResponse.getAccessToken(),
                     loginResponse.getRefreshToken(),
@@ -161,10 +163,10 @@ public class CompanyAuthController {
             }
 
             // Validate and extract company ID from the token via the service layer
-            UUID companyId = internalCompanyAuthService.validateAccessTokenAndGetCompanyId(authToken);
+            UUID companyId = internalAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
 
             // Verify OTP and activate an account
-            internalCompanyAuthService.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
+            internalAuthInterface.verifyOtpAndActivateAccount(companyId, otpDto.getOtp());
 
             return ResponseEntity.ok(
                     OtpVerificationResponseDto.builder()
@@ -212,10 +214,10 @@ public class CompanyAuthController {
             }
             log.info("Resending OTP for company with token.");
             // Validate and extract company ID from the token via the service layer
-            UUID companyId = internalCompanyAuthService.validateAccessTokenAndGetCompanyId(authToken);
+            UUID companyId = internalAuthInterface.validateAccessTokenAndGetCompanyId(authToken);
 
             // Resend OTP
-            internalCompanyAuthService.resendOtp(companyId);
+            internalAuthInterface.resendOtp(companyId);
 
             return ResponseEntity.ok(
                     OtpVerificationResponseDto.builder()
@@ -225,7 +227,6 @@ public class CompanyAuthController {
             );
         };
     }
-
 
     @Operation(
             summary = "Refresh access token",
@@ -262,8 +263,8 @@ public class CompanyAuthController {
             }
 
             // Refresh the token pair (includes reuse detection)
-            LoginServiceDto tokenResponse = internalCompanyAuthService.refreshTokenPair(refreshToken);
-            internalCompanyAuthService.setAuthAndRefreshCookieToBrowser(
+            LoginServiceDto tokenResponse = internalAuthInterface.refreshTokenPair(refreshToken);
+            internalAuthInterface.setAuthAndRefreshCookieToBrowser(
                     response,
                     tokenResponse.getAccessToken(),
                     tokenResponse.getRefreshToken(),
@@ -303,8 +304,8 @@ public class CompanyAuthController {
             HttpServletResponse response) {
         return () -> {
             // Revoke tokens via service layer (blocklist access token, remove refresh token)
-            internalCompanyAuthService.logout(accessToken, refreshToken);
-            internalCompanyAuthService.setAuthAndRefreshCookieToBrowser(response, accessToken, refreshToken, 0, 0);
+            internalAuthInterface.logout(accessToken, refreshToken);
+            internalAuthInterface.setAuthAndRefreshCookieToBrowser(response, accessToken, refreshToken, 0, 0);
 
             return ResponseEntity.ok(
                     LogoutResponseDto.builder()
@@ -315,14 +316,114 @@ public class CompanyAuthController {
         };
     }
 
-    @GetMapping("/hello")
-    public String hello() {
-        return "hello world";
+    @Operation(
+            summary = "Set initial password for SSO account",
+            description = "Sets the initial password for an SSO account. " +
+                    "This endpoint is only for accounts that logged in via Google OAuth and don't have a password yet."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Password set successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PasswordOperationResponseDto.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request or password already set",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Company not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    })
+    @PostMapping("/set-password")
+    public Callable<ResponseEntity<GenericResponseDto<?>>> setInitialPassword(
+            @Valid @RequestBody CompanySetPasswordRequestDto requestDto
+    ) {
+        return () -> {
+            internalAuthInterface.setInitialPassword(requestDto.getCompanyId(), requestDto.getPassword());
+
+            PasswordOperationResponseDto response = PasswordOperationResponseDto.builder()
+                    .success(true)
+                    .message("Password set successfully. You can now login with email and password.")
+                    .build();
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new GenericResponseDto<>(true, "Password set successfully", response));
+        };
     }
 
-    @GetMapping("/error")
-    public String error() {
-        return "error";
+    @Operation(
+            summary = "Change password",
+            description = "Changes the password for an account. " +
+                    "Requires the current password for verification. Works for both SSO and non-SSO accounts."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Password changed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PasswordOperationResponseDto.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request or no password set",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Current password is incorrect",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Company not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    })
+    @PostMapping("/change-password")
+    public Callable<ResponseEntity<GenericResponseDto<?>>> changePassword(
+            @Valid @RequestBody CompanyUpdatePasswordRequestDto requestDto
+    ) {
+        return () -> {
+            internalAuthInterface.changePassword(
+                    requestDto.getCompanyId(),
+                    requestDto.getCurrentPassword(),
+                    requestDto.getNewPassword()
+            );
+
+            PasswordOperationResponseDto response = PasswordOperationResponseDto.builder()
+                    .success(true)
+                    .message("Password changed successfully.")
+                    .build();
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new GenericResponseDto<>(true, "Password changed successfully", response));
+        };
     }
 
     @GetMapping("/dashboard")

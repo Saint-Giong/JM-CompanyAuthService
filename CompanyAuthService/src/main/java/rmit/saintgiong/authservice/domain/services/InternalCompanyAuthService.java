@@ -1,11 +1,14 @@
 package rmit.saintgiong.authservice.domain.services;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
@@ -13,10 +16,6 @@ import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLoginRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
@@ -24,16 +23,12 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRespo
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationResponseRecord;
 import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationSentRecord;
-import rmit.saintgiong.shared.type.CookieType;
-import rmit.saintgiong.shared.token.TokenPairDto;
-import rmit.saintgiong.shared.token.TokenClaimsDto;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
-import rmit.saintgiong.shared.type.Role;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
-import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.utils.EmailService;
 import rmit.saintgiong.authservice.common.utils.JweTokenService;
 import rmit.saintgiong.authservice.common.utils.OtpService;
@@ -41,6 +36,10 @@ import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.model.CompanyAuth;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
+import rmit.saintgiong.shared.token.TokenClaimsDto;
+import rmit.saintgiong.shared.token.TokenPairDto;
+import rmit.saintgiong.shared.type.CookieType;
+import rmit.saintgiong.shared.type.Role;
 
 @Service
 @AllArgsConstructor
@@ -335,5 +334,45 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         cookie.setPath("/");
         cookie.setMaxAge(0);
         response.addCookie(cookie);
+    }
+
+    @Override
+    @Transactional
+    public void setInitialPassword(String companyId, String password) {
+        CompanyAuthEntity currentUser = companyAuthRepository.findById(UUID.fromString(companyId))
+                .orElseThrow(() -> new ResourceNotFoundException("Company", "ID", companyId));
+
+        if (currentUser.getSsoToken() == null) {
+            throw new IllegalStateException("This endpoint is only for SSO accounts");
+        }
+
+        if (currentUser.getHashedPassword() != null) {
+            throw new IllegalStateException("Password already set. Use change password endpoint instead.");
+        }
+
+        currentUser.setHashedPassword(passwordEncoder.encode(password));
+        companyAuthRepository.save(currentUser);
+
+        log.info("Initial password set successfully for SSO account: {}", companyId);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String companyId, String currentPassword, String newPassword) {
+        CompanyAuthEntity currentUser = companyAuthRepository.findById(UUID.fromString(companyId))
+                .orElseThrow(() -> new ResourceNotFoundException("Company", "ID", companyId));
+
+        if (currentUser.getHashedPassword() == null) {
+            throw new IllegalArgumentException("No password set. Use set password endpoint first.");
+        }
+
+        if (!passwordEncoder.matches(currentPassword, currentUser.getHashedPassword())) {
+            throw new InvalidCredentialsException("Current password is incorrect");
+        }
+
+        currentUser.setHashedPassword(passwordEncoder.encode(newPassword));
+        companyAuthRepository.save(currentUser);
+
+        log.info("Password changed successfully for company: {}", companyId);
     }
 }

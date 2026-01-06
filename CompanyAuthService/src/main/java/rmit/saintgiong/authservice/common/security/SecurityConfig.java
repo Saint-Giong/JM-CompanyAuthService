@@ -46,9 +46,10 @@ public class SecurityConfig {
 
                         // PUBLIC ENDPOINT FOR SERVICES
                         .requestMatchers(
+                                "/google/redirect-url",
+                                "/google/auth",
                                 "/register",
                                 "/login",
-                                "/google/**",
                                 "/dashboard"
                         ).permitAll()
 
@@ -58,6 +59,10 @@ public class SecurityConfig {
                         ).hasAnyRole(Role.COMPANY.name(), Role.COMPANY_REFRESH.name())
 
                         .requestMatchers(
+                                "/google/link-google",
+                                "/google/relink-google",
+                                "/set-password",
+                                "/change-password",
                                 "/verify-account",
                                 "/resend-otp"
                         ).hasRole(Role.COMPANY.name())

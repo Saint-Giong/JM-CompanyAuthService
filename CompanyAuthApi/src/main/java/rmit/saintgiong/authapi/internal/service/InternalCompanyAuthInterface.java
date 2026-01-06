@@ -1,9 +1,15 @@
 package rmit.saintgiong.authapi.internal.service;
 
-import jakarta.servlet.http.HttpServletResponse;
-import rmit.saintgiong.authapi.internal.common.dto.auth.*;
-
 import java.util.UUID;
+
+import jakarta.servlet.http.HttpServletResponse;
+import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLoginRequestDto;
+import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogleRequestDto;
+import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
+import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationResponseDto;
+import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
+
+
 
 public interface InternalCompanyAuthInterface {
     CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto requestDto);
@@ -19,6 +25,10 @@ public interface InternalCompanyAuthInterface {
     void verifyOtpAndActivateAccount(UUID companyId, String otp);
 
     void resendOtp(UUID companyId);
+
+    void setInitialPassword(String companyId, String password);
+
+    void changePassword(String companyId, String currentPassword, String newPassword);
 
     void logout(String accessToken, String refreshToken);
 
@@ -39,4 +49,6 @@ public interface InternalCompanyAuthInterface {
     );
 
      void clearBrowserCookie(HttpServletResponse response, String cookieType);
+
+
 }
