@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.dto.oauth;
+package rmit.saintgiong.authapi.internal.common.dto.oauth;
 
 import com.google.auto.value.AutoValue;
 import lombok.*;

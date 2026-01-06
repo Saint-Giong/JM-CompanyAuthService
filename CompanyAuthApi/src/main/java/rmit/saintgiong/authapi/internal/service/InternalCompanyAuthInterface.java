@@ -1,7 +1,7 @@
 package rmit.saintgiong.authapi.internal.service;
 
 import jakarta.servlet.http.HttpServletResponse;
-import rmit.saintgiong.authapi.internal.dto.auth.*;
+import rmit.saintgiong.authapi.internal.common.dto.auth.*;
 
 import java.util.UUID;
 

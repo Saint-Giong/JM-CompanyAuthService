@@ -10,7 +10,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.shared.token.TokenPairDto;
-import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
+import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleOAuthResponseDto;
 import rmit.saintgiong.shared.type.Role;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;

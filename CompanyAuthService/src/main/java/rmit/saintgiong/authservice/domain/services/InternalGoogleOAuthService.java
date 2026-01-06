@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
-import rmit.saintgiong.authapi.internal.dto.oauth.GoogleOAuthResponseDto;
+import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleOAuthResponseDto;
 import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.shared.type.Role;

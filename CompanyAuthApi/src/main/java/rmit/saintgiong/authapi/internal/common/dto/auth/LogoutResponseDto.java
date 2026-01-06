@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.dto.refresh;
+package rmit.saintgiong.authapi.internal.common.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,15 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO for refresh token response.
- * Contains the result of token refresh operation.
+ * DTO for logout response.
+ * Contains the result of logout operation.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RefreshTokenResponseDto {
+public class LogoutResponseDto {
     private boolean success;
     private String message;
-    private String companyId;
 }

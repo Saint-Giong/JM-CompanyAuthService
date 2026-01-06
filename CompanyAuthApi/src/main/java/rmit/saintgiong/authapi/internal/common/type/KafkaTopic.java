@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.type;
+package rmit.saintgiong.authapi.internal.common.type;
 
 import lombok.NoArgsConstructor;
 

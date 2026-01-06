@@ -13,10 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import rmit.saintgiong.authapi.internal.dto.auth.*;
-import rmit.saintgiong.authapi.internal.dto.otp.OtpVerificationRequestDto;
-import rmit.saintgiong.authapi.internal.dto.otp.OtpVerificationResponseDto;
-import rmit.saintgiong.authapi.internal.dto.refresh.RefreshTokenResponseDto;
+import rmit.saintgiong.authapi.internal.common.dto.auth.*;
+import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationRequestDto;
+import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationResponseDto;
+import rmit.saintgiong.authapi.internal.common.dto.refresh.RefreshTokenResponseDto;
 import rmit.saintgiong.shared.type.CookieType;
 import rmit.saintgiong.shared.response.ErrorResponseDto;
 import rmit.saintgiong.authservice.common.config.JweConfig;
@@ -150,8 +150,7 @@ public class CompanyAuthController {
     @PostMapping("/verify-account")
     public Callable<ResponseEntity<OtpVerificationResponseDto>> verifyAccount(
             @Valid @RequestBody OtpVerificationRequestDto otpDto,
-            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken,
-            HttpServletResponse response
+            @CookieValue(name = CookieType.ACCESS_TOKEN, required = false) String authToken
     ) {
         return () -> {
 

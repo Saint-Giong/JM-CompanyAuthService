@@ -15,7 +15,7 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
-import rmit.saintgiong.authapi.internal.type.KafkaTopic;
+import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
 
 import java.util.HashMap;
 import java.util.Map;
