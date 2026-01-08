@@ -1,14 +1,9 @@
 package rmit.saintgiong.authservice.domain.services;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.transaction.Transactional;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
@@ -16,6 +11,11 @@ import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLoginRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
@@ -80,12 +80,10 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
 
         ProducerRecord<String, Object> request = new ProducerRecord<>(
                 KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
-                profileSentRecord
-        );
+                profileSentRecord);
         request.headers().add(
                 KafkaHeaders.REPLY_TOPIC,
-                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes()
-        );
+                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes());
 
         try {
             RequestReplyFuture<String, Object, Object> responseRecord = replyingKafkaTemplate.sendAndReceive(request);
@@ -124,8 +122,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
     @Transactional
     public CompanyRegistrationResponseDto registerCompanyWithGoogleId(
             CompanyRegistrationGoogleRequestDto googleRequestDto,
-            String tempToken
-    ) {
+            String tempToken) {
         CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(googleRequestDto);
 
         String googleId = jweTokenService.getGoogleIdFromJweToken(tempToken);
@@ -152,12 +149,10 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
 
         ProducerRecord<String, Object> request = new ProducerRecord<>(
                 KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
-                profileSentRecord
-        );
+                profileSentRecord);
         request.headers().add(
                 KafkaHeaders.REPLY_TOPIC,
-                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes()
-        );
+                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes());
 
         try {
             RequestReplyFuture<String, Object, Object> responseRecord = replyingKafkaTemplate.sendAndReceive(request);
@@ -275,7 +270,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
     public LoginServiceDto refreshTokenPair(String refreshToken) {
         // Get claims from the refresh token to extract companyId
         TokenClaimsDto claims = jweTokenService.getTokenClaimsDtoDecryptedFromTokenString(refreshToken);
-        
+
         TokenPairDto tokenPair = jweTokenService.refreshAccessToken(refreshToken);
 
         return LoginServiceDto.builder()
@@ -300,8 +295,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
             String accessToken,
             String refreshToken,
             int accessMaxAge,
-            int refreshMaxAge
-    ) {
+            int refreshMaxAge) {
         setCookieToBrowser(response, CookieType.ACCESS_TOKEN, accessToken, accessMaxAge);
         setCookieToBrowser(response, CookieType.REFRESH_TOKEN, refreshToken, refreshMaxAge);
     }
@@ -311,29 +305,27 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
             HttpServletResponse response,
             String cookieType,
             String token,
-            int maxAge
-    ) {
+            int maxAge) {
         if (token != null) {
-            Cookie cookie = new Cookie(cookieType, token);
-            cookie.setHttpOnly(true);
-            cookie.setSecure(true);
-            cookie.setPath("/");
-            cookie.setMaxAge(maxAge);
-            response.addCookie(cookie);
+            // Use Set-Cookie header directly to support SameSite=None for cross-origin
+            // requests
+            String cookieValue = String.format(
+                    "%s=%s; Max-Age=%d; Path=/; HttpOnly; Secure; SameSite=None",
+                    cookieType, token, maxAge);
+            response.addHeader("Set-Cookie", cookieValue);
         }
     }
 
     @Override
     public void clearBrowserCookie(
             HttpServletResponse response,
-            String cookieType
-    ) {
-        Cookie cookie = new Cookie(cookieType, "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+            String cookieType) {
+        // Use Set-Cookie header directly to support SameSite=None for cross-origin
+        // requests
+        String cookieValue = String.format(
+                "%s=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=None",
+                cookieType);
+        response.addHeader("Set-Cookie", cookieValue);
     }
 
     @Override
