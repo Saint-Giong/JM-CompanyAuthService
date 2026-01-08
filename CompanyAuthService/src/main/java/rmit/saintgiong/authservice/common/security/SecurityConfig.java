@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 "/google/auth",
                                 "/register",
                                 "/login",
-                                "/dashboard"
+                                "/dashboard",
+                                "/activate-account"
                         ).permitAll()
 
                         .requestMatchers(

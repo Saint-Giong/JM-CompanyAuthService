@@ -23,6 +23,7 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRespo
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationResponseRecord;
 import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationSentRecord;
+import rmit.saintgiong.authapi.internal.common.dto.otp.ActivationPairDto;
 import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
 import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
@@ -108,8 +109,16 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
             log.error("Error while sending profile registration message for companyId={}", savedAuth.getCompanyId(), e);
         }
 
-        String otp = otpService.generateOtp(savedAuth.getCompanyId());
-        emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), otp);
+        String activationToken = jweTokenService.generateActivationToken(
+                savedAuth.getCompanyId(),
+                savedAuth.getEmail(),
+                Role.COMPANY
+        );
+
+
+        ActivationPairDto activationPairDto = otpService.generateOtp(savedAuth.getCompanyId(), activationToken);
+
+        emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), activationPairDto.getOtp(), activationPairDto.getActivationToken());
 
         return CompanyRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
@@ -181,8 +190,14 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                     savedAuth.getCompanyId(), e);
         }
 
-        String otp = otpService.generateOtp(savedAuth.getCompanyId());
-        emailService.sendOtpEmail(googleRequestDto.getEmail(), googleRequestDto.getCompanyName(), otp);
+        String activationToken = jweTokenService.generateActivationToken(
+                savedAuth.getCompanyId(),
+                savedAuth.getEmail(),
+                Role.COMPANY
+        );
+
+        ActivationPairDto activationPairDto = otpService.generateOtp(savedAuth.getCompanyId(), activationToken);
+        emailService.sendOtpEmail(googleRequestDto.getEmail(), googleRequestDto.getCompanyName(), activationPairDto.getOtp(), activationPairDto.getActivationToken());
 
         return CompanyRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
@@ -246,6 +261,35 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
 
     @Override
     @Transactional
+    public void verifyActivationTokenAndActivateAccount(String activationToken) {
+        // Validate and decrypt the token to get companyId
+        TokenClaimsDto claims = jweTokenService.getTokenClaimsDtoDecryptedFromTokenString(activationToken);
+        UUID companyId = claims.getSub();
+
+        // Verify that this token matches the one stored in Redis for this user
+        if (!otpService.verifyActivationToken(companyId, activationToken)) {
+            throw new InvalidTokenException("Invalid, expired, or used activation link");
+        }
+
+        // Find the company by ID
+        CompanyAuthEntity companyAuth = companyAuthRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("companyId", "", "Company not found"));
+
+        if (companyAuth.isActivated()) {
+            // Idempotency: if already activated, just return (or could throw exception)
+            log.info("Company account already activated: {}", companyId);
+            return;
+        }
+
+        // Activate the company account
+        companyAuth.setActivated(true);
+        companyAuthRepository.save(companyAuth);
+
+        log.info("Company account activated via link successfully for company ID: {}", companyId);
+    }
+
+    @Override
+    @Transactional
     public void resendOtp(UUID companyId) {
         // Find the company by ID
         CompanyAuthEntity companyAuth = companyAuthRepository.findById(companyId)
@@ -255,12 +299,16 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
             throw new IllegalStateException("Account is already activated");
         }
 
-        // Invalidate and Generate new OTP
-        String otp = otpService.invalidateExistingAndGenerateNewOtp(companyId);
+        String activationToken = jweTokenService.generateActivationToken(
+                companyAuth.getCompanyId(),
+                companyAuth.getEmail(),
+                Role.COMPANY
+        );
 
-        // Send OTP email
-        // TODO: replace company email with company name
-        emailService.sendOtpEmail(companyAuth.getEmail(), companyAuth.getEmail(), otp);
+        ActivationPairDto activationPairDto = otpService.invalidateExistingAndGenerateNewOtp(companyAuth.getCompanyId(), activationToken);
+
+        // TODO: get company name Kafka
+        emailService.sendOtpEmail(companyAuth.getEmail(), companyAuth.getEmail(), activationPairDto.getOtp(), activationPairDto.getActivationToken());
 
         log.info("OTP resent to company: {}", companyAuth.getEmail());
     }
