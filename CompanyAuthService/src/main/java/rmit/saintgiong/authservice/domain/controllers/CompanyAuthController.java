@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.common.dto.auth.*;
 import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationResponseDto;
@@ -36,6 +37,7 @@ import rmit.saintgiong.shared.type.CookieType;
 public class CompanyAuthController {
     private final JweConfig jweConfig;
     private final InternalCompanyAuthInterface internalCompanyAuthInterface;
+    private final ExternalCompanyAuthInterface externalCompanyAuthInterface;
     private final CompanyAuthMapper companyAuthMapper;
 
     @Operation(

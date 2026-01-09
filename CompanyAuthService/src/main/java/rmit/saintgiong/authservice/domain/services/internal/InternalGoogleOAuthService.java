@@ -37,9 +37,9 @@ import rmit.saintgiong.authservice.common.utils.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface {
 
     @Value("${OAUTH2_CLIENT_ID}")
@@ -104,7 +104,6 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
                     .name(oauthResponseDto.getName())
                     .tempToken(oauthResponseDto.getTempToken()) // Send token in body as fallback
                     .build();
-
         }
 
         return null;
