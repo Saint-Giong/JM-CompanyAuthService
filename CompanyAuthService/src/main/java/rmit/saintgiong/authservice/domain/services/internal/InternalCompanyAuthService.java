@@ -21,8 +21,8 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogl
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
-import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationResponseRecord;
-import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationSentRecord;
+import rmit.saintgiong.authapi.external.common.dto.avro.ProfileRegistrationResponseRecord;
+import rmit.saintgiong.authapi.external.common.dto.avro.ProfileRegistrationSentRecord;
 import rmit.saintgiong.authapi.internal.common.dto.otp.ActivationPairDto;
 import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
 import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
