@@ -18,6 +18,7 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationReque
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.common.dto.otp.ActivationPairDto;
+import rmit.saintgiong.authapi.internal.common.dto.subscription.CreateSubscriptionRequestDto;
 import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
@@ -31,6 +32,7 @@ import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.model.CompanyAuth;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 import rmit.saintgiong.shared.dto.avro.profile.CreateProfileResponseRecord;
+import rmit.saintgiong.shared.dto.avro.subscription.CreateSubscriptionResponseRecord;
 import rmit.saintgiong.shared.token.TokenClaimsDto;
 import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.shared.type.CookieType;
@@ -51,8 +53,6 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
     private final OtpService otpService;
     private final JweTokenService jweTokenService;
 
-    private ReplyingKafkaTemplate<String, Object, Object> replyingKafkaTemplate;
-
     @Override
     @Transactional
     public CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto requestDto) {
@@ -66,17 +66,30 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
 
-        CreateProfileResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
-
-        if (response.getCompanyId() == null) {
+        CreateProfileResponseRecord profileResponse = externalCompanyAuthInterface.sendCreateProfileRequest(savedAuth.getCompanyId(), requestDto);
+        if (profileResponse.getCompanyId() == null) {
             log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
             return CompanyRegistrationResponseDto.builder()
                     .success(false)
                     .email("Failed to create profile for ID: " + savedAuth.getCompanyId())
                     .build();
         }
+        log.info("Successfully create profile for ID: {}", profileResponse.getCompanyId());
 
-        log.info("Successfully create profile for ID: {}", response.getCompanyId());
+        // Create Subscription Profile
+        CreateSubscriptionRequestDto subscriptionRequestDto = CreateSubscriptionRequestDto.builder()
+                .companyId(savedAuth.getCompanyId())
+                .build();
+
+        CreateSubscriptionResponseRecord subReponse = externalCompanyAuthInterface.sendCreateSubscriptionRequest(subscriptionRequestDto);
+        if (subReponse.getCompanyId() == null) {
+            log.warn("Failed create subscription for ID: {}", savedAuth.getCompanyId());
+            return CompanyRegistrationResponseDto.builder()
+                    .success(false)
+                    .email("Failed to create subscription for ID: " + savedAuth.getCompanyId())
+                    .build();
+        }
+        log.info("Successfully create subscription for ID: {}", subReponse.getCompanyId());
 
         String activationToken = jweTokenService.generateActivationToken(
                 savedAuth.getCompanyId(),
@@ -84,16 +97,14 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                 Role.COMPANY
         );
 
-
         ActivationPairDto activationPairDto = otpService.generateOtp(savedAuth.getCompanyId(), activationToken);
-
         emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), activationPairDto.getOtp(), activationPairDto.getActivationToken());
 
         return CompanyRegistrationResponseDto.builder()
-                .companyId(response.getCompanyId())
+                .companyId(savedAuth.getCompanyId())
                 .email(savedAuth.getEmail())
                 .success(true)
-                .message("Successfully create profile for ID: " + response.getCompanyId())
+                .message("Successfully create profile for ID: " + savedAuth.getCompanyId())
                 .build();
     }
 
@@ -132,7 +143,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                 .address(Optional.ofNullable(googleRequestDto.getAddress()).orElse(""))
                 .build();
 
-        CreateProfileResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
+        CreateProfileResponseRecord response = externalCompanyAuthInterface.sendCreateProfileRequest(savedAuth.getCompanyId(), requestDto);
 
         if (response.getCompanyId() == null) {
             log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
