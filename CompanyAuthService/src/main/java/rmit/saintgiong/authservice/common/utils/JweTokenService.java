@@ -5,6 +5,7 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import rmit.saintgiong.shared.type.Role;
 import rmit.saintgiong.shared.type.TokenType;
@@ -36,6 +37,9 @@ public class JweTokenService {
 
     private RSAPublicKey publicKey;
     private RSAPrivateKey privateKey;
+
+    @Value("${otp.ttl-seconds:120}")  // Default: 2 minutes
+    private long activationTtlSeconds;
 
     public JweTokenService(RsaKeyLoader keyLoader, TokenStorageService tokenStorageService, JweConfig jweConfig) {
         this.keyLoader = keyLoader;
@@ -414,6 +418,28 @@ public class JweTokenService {
         } catch (Exception e) {
             log.error("Temp token validation failed", e);
             throw new InvalidTokenException("Invalid or malformed token");
+        }
+    }
+
+
+    public String generateActivationToken(UUID userId, String email, Role role) {
+        try {
+            String activationTokenId = UUID.randomUUID().toString();
+
+            String activationToken = generateNewToken(
+                    userId,
+                    email,
+                    role,
+                    TokenType.ACCESS, // TODO: Add token type
+                    jweConfig.getIssuer(),
+                    activationTtlSeconds,
+                    activationTokenId
+            );
+
+            return activationToken;
+        } catch (JOSEException e) {
+            log.error("Failed to generate activation token for user: {}", userId, e);
+            throw new RuntimeException("Token generation failed", e);
         }
     }
 }

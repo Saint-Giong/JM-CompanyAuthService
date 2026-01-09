@@ -177,6 +177,44 @@ public class CompanyAuthController {
         };
     }
 
+    @Operation(
+            summary = "Activate account with token",
+            description = "Activates the account using the activation token from the email link."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Account activated successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = OtpVerificationResponseDto.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid or expired token",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    })
+    @PostMapping("/activate-account")
+    public Callable<ResponseEntity<OtpVerificationResponseDto>> activateAccount(
+            @RequestParam("activationToken") String activationToken
+    ) {
+        return () -> {
+            internalCompanyAuthInterface.verifyActivationTokenAndActivateAccount(activationToken);
+
+            return ResponseEntity.ok(
+                    OtpVerificationResponseDto.builder()
+                            .success(true)
+                            .message("Account activated successfully. Please login to continue.")
+                            .build()
+            );
+        };
+    }
+
 
     @Operation(
             summary = "Resend OTP",

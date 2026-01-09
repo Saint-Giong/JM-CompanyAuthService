@@ -6,9 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import rmit.saintgiong.authapi.internal.common.dto.otp.ActivationPairDto;
 import rmit.saintgiong.authservice.common.exception.otp.OtpHourlyLimitExceededException;
 import rmit.saintgiong.authservice.common.exception.otp.OtpResendCooldownException;
 import rmit.saintgiong.authservice.common.exception.otp.OtpVerificationLockedException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -59,6 +61,8 @@ public class OtpService {
     @Value("${otp.max-per-hour:5}")
     private int maxOtpsPerHour;
 
+    private final ObjectMapper objectMapper;
+
     /**
      * Generates a random 6-digit OTP for the given company ID.
      * Enforces hourly send limit and resend cooldown.
@@ -67,16 +71,19 @@ public class OtpService {
      * @param companyId The company ID to associate with the OTP
      * @return generated 6-digit OTP
      */
-    public String generateOtp(UUID companyId) {
+    public ActivationPairDto generateOtp(UUID companyId, String activationToken) {
         enforceHourlyLimit(companyId);
         enforceResendCooldown(companyId);
 
         // Generate a random 6-digit OTP
         String otp = generateRandomOtp();
 
+        ActivationPairDto activationPairDto = new ActivationPairDto(otp, activationToken);
+        String jsonString = objectMapper.writeValueAsString(activationPairDto);
+
         // Store OTP in Redis with TTL
         String key = OTP_PREFIX + companyId;
-        redisTemplate.opsForValue().set(key, otp, otpTtlSeconds, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, jsonString, otpTtlSeconds, TimeUnit.SECONDS);
 
         // Reset attempts counter for this fresh OTP
         resetVerificationAttempts(companyId);
@@ -86,7 +93,7 @@ public class OtpService {
         startResendCooldown(companyId);
 
         log.debug("Generated OTP for company {} (TTL {}s)", companyId, otpTtlSeconds);
-        return otp;
+        return activationPairDto;
     }
 
     /**
@@ -127,15 +134,17 @@ public class OtpService {
         }
 
         String key = OTP_PREFIX + companyId;
-        String storedOtp = redisTemplate.opsForValue().get(key);
+        String activationPairString = redisTemplate.opsForValue().get(key);
 
-        if (storedOtp == null) {
+        if (activationPairString == null) {
             // OTP expired or never issued
             log.debug("No OTP found for company {}", companyId);
             return false;
         }
 
-        boolean isValid = storedOtp.equals(otp);
+        ActivationPairDto activationPairDto = objectMapper.readValue(activationPairString, ActivationPairDto.class);
+
+        boolean isValid = activationPairDto.getOtp().equals(otp);
         if (isValid) {
             // On success, consume OTP and clear attempts
             redisTemplate.delete(key);
@@ -148,13 +157,49 @@ public class OtpService {
     }
 
     /**
+     * Verifies the provided activation token against the stored token for the given company ID.
+     *
+     * @param companyId       The company ID
+     * @param activationToken The activation token to verify
+     * @return true if the token matches and is valid, false otherwise
+     */
+    public boolean verifyActivationToken(UUID companyId, String activationToken) {
+        String key = OTP_PREFIX + companyId;
+        String activationPairString = redisTemplate.opsForValue().get(key);
+
+        if (activationPairString == null) {
+            // Token expired or never issued
+            log.debug("No activation token found for company {}", companyId);
+            return false;
+        }
+
+        try {
+            ActivationPairDto activationPairDto = objectMapper.readValue(activationPairString, ActivationPairDto.class);
+
+            boolean isValid = activationPairDto.getActivationToken().equals(activationToken);
+            if (isValid) {
+                // On success, consume token and clear attempts
+                redisTemplate.delete(key);
+                redisTemplate.delete(OTP_ATTEMPTS_PREFIX + companyId);
+            } else {
+                log.debug("Invalid activation token provided for company {}", companyId);
+            }
+
+            return isValid;
+        } catch (Exception e) {
+            log.error("Error verifying activation token for company {}", companyId, e);
+            return false;
+        }
+    }
+
+    /**
      * Invalidates existing OTP (if any) and generates a new one.
      * Respects the same resend cooldown and hourly limits.
      *
      * @param companyId The company ID
      * @return The new generated 6-digit OTP
      */
-    public String invalidateExistingAndGenerateNewOtp(UUID companyId) {
+    public ActivationPairDto invalidateExistingAndGenerateNewOtp(UUID companyId, String activationToken) {
 
         // Enforce resend rules
         enforceHourlyLimit(companyId);
@@ -165,15 +210,18 @@ public class OtpService {
         redisTemplate.delete(key);
         resetVerificationAttempts(companyId);
 
-        // Generate new OTP
+        // Generate a random 6-digit OTP
         String otp = generateRandomOtp();
-        redisTemplate.opsForValue().set(key, otp, otpTtlSeconds, TimeUnit.SECONDS);
+        ActivationPairDto activationPairDto = new ActivationPairDto(otp, activationToken);
+        String jsonString = objectMapper.writeValueAsString(activationPairDto);
+
+        redisTemplate.opsForValue().set(key, jsonString, otpTtlSeconds, TimeUnit.SECONDS);
 
         // Record rate limiting metadata
         incrementOtpSentPerHour(companyId);
         startResendCooldown(companyId);
 
-        return otp;
+        return activationPairDto;
     }
 
     // Rate limiting helpers
