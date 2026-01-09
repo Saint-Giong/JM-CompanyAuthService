@@ -1,38 +1,5 @@
 package rmit.saintgiong.authservice.domain.services;
 
-
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.util.UriComponentsBuilder;
-import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLinkGoogleRequestDto;
-import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleAuthResponseDto;
-import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
-import rmit.saintgiong.authservice.common.config.JweConfig;
-import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
-import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
-import rmit.saintgiong.shared.response.GenericResponseDto;
-import rmit.saintgiong.shared.type.CookieType;
-import rmit.saintgiong.shared.type.Role;
-import rmit.saintgiong.shared.token.TokenPairDto;
-import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
-import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
-import rmit.saintgiong.authservice.common.utils.JweTokenService;
-import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
-import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
-
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -40,6 +7,35 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleAuthResponseDto;
+import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleOAuthResponseDto;
+import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authservice.common.config.JweConfig;
+import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
+import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
+import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
+import rmit.saintgiong.authservice.common.utils.JweTokenService;
+import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
+import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
+import rmit.saintgiong.shared.token.TokenPairDto;
+import rmit.saintgiong.shared.type.CookieType;
+import rmit.saintgiong.shared.type.Role;
 
 @Slf4j
 @Service
@@ -68,7 +64,8 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
     private static final NetHttpTransport NET_HTTP_TRANSPORT = new NetHttpTransport();
 
     @Override
-    public GoogleAuthResponseDto handleGoogleAuthentication (HttpServletResponse response, String code) throws IOException {
+    public GoogleAuthResponseDto handleGoogleAuthentication(HttpServletResponse response, String code)
+            throws IOException {
         GoogleOAuthResponseDto oauthResponseDto = authenticateGoogleUser(code);
         TokenPairDto tokenPairDto = oauthResponseDto.getTokenPairDto();
 
@@ -78,16 +75,14 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
                     response,
                     CookieType.ACCESS_TOKEN,
                     tokenPairDto.getAccessToken(),
-                    (int) tokenPairDto.getAccessTokenExpiresIn()
-            );
+                    (int) tokenPairDto.getAccessTokenExpiresIn());
 
             if (tokenPairDto.getRefreshToken() != null && !tokenPairDto.getRefreshToken().isEmpty()) {
                 internalCompanyAuthInterface.setCookieToBrowser(
                         response,
                         CookieType.REFRESH_TOKEN,
                         tokenPairDto.getRefreshToken(),
-                        (int) tokenPairDto.getRefreshTokenExpiresIn()
-                );
+                        (int) tokenPairDto.getRefreshTokenExpiresIn());
             }
 
             return GoogleAuthResponseDto.builder()
@@ -102,12 +97,12 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
                     response,
                     CookieType.TEMP_TOKEN,
                     oauthResponseDto.getTempToken(),
-                    (int) oauthResponseDto.getTempTokenExpiresIn()
-            );
+                    (int) oauthResponseDto.getTempTokenExpiresIn());
 
             return GoogleAuthResponseDto.builder()
                     .email(oauthResponseDto.getEmail())
                     .name(oauthResponseDto.getName())
+                    .tempToken(oauthResponseDto.getTempToken()) // Send token in body as fallback
                     .build();
 
         }
@@ -116,21 +111,23 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
     }
 
     @Override
-    public void handleLinkGoogleToAccount (String companyId, String code, boolean isLink, boolean isRelink) throws IOException {
+    public void handleLinkGoogleToAccount(String companyId, String code, boolean isLink, boolean isRelink)
+            throws IOException {
         if (code == null || code.trim().isEmpty()) {
             throw new InvalidTokenException("Authorization code is missing");
         }
 
         CompanyAuthEntity currentUser = companyAuthRepository.findById(UUID.fromString(companyId)).orElseThrow(
-                () -> new ResourceNotFoundException("Company", "ID", companyId)
-        );
+                () -> new ResourceNotFoundException("Company", "ID", companyId));
 
         if (isLink && currentUser.getSsoToken() != null) {
-            throw new IllegalArgumentException("Account already linked to Google. Use '/google/relink-google' to re-link new Google Account");
+            throw new IllegalArgumentException(
+                    "Account already linked to Google. Use '/google/relink-google' to re-link new Google Account");
         }
 
         if (isRelink && currentUser.getSsoToken() == null) {
-            throw new IllegalArgumentException("Account is not linked to Google. Use '/google/link-google' to link new Google Account");
+            throw new IllegalArgumentException(
+                    "Account is not linked to Google. Use '/google/link-google' to link new Google Account");
         }
 
         GoogleIdToken.Payload payload = verifyAndGetGoogleIdTokenPayload(code, true);
@@ -138,7 +135,8 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
         String googleEmail = payload.getEmail();
 
         Optional<CompanyAuthEntity> existingLinkedAccount = companyAuthRepository.findBySsoToken(googleId);
-        if (existingLinkedAccount.isPresent() && !existingLinkedAccount.get().getCompanyId().toString().equals(companyId)) {
+        if (existingLinkedAccount.isPresent()
+                && !existingLinkedAccount.get().getCompanyId().toString().equals(companyId)) {
             throw new CompanyAccountAlreadyExisted("This Google account is already linked to another company account");
         }
 
@@ -164,7 +162,8 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
         GoogleIdToken.Payload googlePayload = verifyAndGetGoogleIdTokenPayload(decodedAuthorizationCode, false);
 
         if (!Boolean.TRUE.equals(googlePayload.getEmailVerified())) {
-            throw new IllegalArgumentException(String.format("Email: %s is not verified by Google", googlePayload.getEmail()));
+            throw new IllegalArgumentException(
+                    String.format("Email: %s is not verified by Google", googlePayload.getEmail()));
         }
 
         String googleId = googlePayload.getSubject();
@@ -191,15 +190,16 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
         }
 
         if (!savedCompany.get().getSsoToken().equals(googleId)) {
-            throw new InvalidCredentialsException(String.format(String.format("Google ID does not match the stored Google ID for the email address: %s. This account is linked to a different Google account.", googleEmail)));
+            throw new InvalidCredentialsException(String.format(String.format(
+                    "Google ID does not match the stored Google ID for the email address: %s. This account is linked to a different Google account.",
+                    googleEmail)));
         }
         // Has email and sso --> Login
         TokenPairDto tokenPairDto = jweTokenService.generateTokenPairDto(
                 savedCompany.get().getCompanyId(),
                 savedCompany.get().getEmail(),
                 Role.COMPANY,
-                savedCompany.get().isActivated()
-        );
+                savedCompany.get().isActivated());
 
         return GoogleOAuthResponseDto.builder()
                 .tokenPairDto(tokenPairDto)
@@ -209,7 +209,8 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
     }
 
     @Override
-    public GoogleIdToken.Payload verifyAndGetGoogleIdTokenPayload(String authorizationCode, boolean isLinking) throws IOException {
+    public GoogleIdToken.Payload verifyAndGetGoogleIdTokenPayload(String authorizationCode, boolean isLinking)
+            throws IOException {
         GoogleTokenResponse responseToken = new GoogleAuthorizationCodeTokenRequest(
                 NET_HTTP_TRANSPORT,
                 GSON_FACTORY,
@@ -217,8 +218,7 @@ public class InternalGoogleOAuthService implements InternalGoogleOAuthInterface 
                 clientId,
                 clientSecret,
                 authorizationCode,
-                isLinking ? redirectLinkUri : redirectLoginUri
-        ).execute();
+                isLinking ? redirectLinkUri : redirectLoginUri).execute();
 
         GoogleIdToken idToken = responseToken.parseIdToken();
 
