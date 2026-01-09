@@ -190,11 +190,6 @@
             <artifactId>kafka-avro-serializer</artifactId>
             <version>7.6.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>1.11.3</version>
-        </dependency>
 
     </dependencies>
 
@@ -242,24 +237,6 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.avro</groupId>
-                <artifactId>avro-maven-plugin</artifactId>
-                <version>1.11.3</version>
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>schema</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>${project.basedir}/src/main/resources/avro</sourceDirectory>
-                            <outputDirectory>${project.build.directory}/generated-sources/avro</outputDirectory>
-                            <stringType>String</stringType>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

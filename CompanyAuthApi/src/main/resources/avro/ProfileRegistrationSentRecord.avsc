@@ -1,5 +1,5 @@
 {
-  "namespace": "rmit.saintgiong.authapi.internal.common.dto.avro",
+  "namespace": "rmit.saintgiong.authapi.external.common.dto.avro",
   "type": "record",
   "name": "ProfileRegistrationSentRecord",
   "fields": [

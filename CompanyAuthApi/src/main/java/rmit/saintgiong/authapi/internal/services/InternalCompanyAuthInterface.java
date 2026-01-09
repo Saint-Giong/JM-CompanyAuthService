@@ -9,9 +9,8 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationReque
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
 
-
-
 public interface InternalCompanyAuthInterface {
+
     CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto requestDto);
 
     CompanyRegistrationResponseDto registerCompanyWithGoogleId(CompanyRegistrationGoogleRequestDto requestDto, String tempToken);

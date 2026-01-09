@@ -2,13 +2,8 @@ package rmit.saintgiong.authservice.domain.services.internal;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
-import org.springframework.kafka.requestreply.RequestReplyFuture;
-import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +11,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLoginRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
 import rmit.saintgiong.authapi.external.common.dto.avro.ProfileRegistrationResponseRecord;
-import rmit.saintgiong.authapi.external.common.dto.avro.ProfileRegistrationSentRecord;
 import rmit.saintgiong.authapi.internal.common.dto.otp.ActivationPairDto;
-import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
 import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
@@ -47,10 +41,12 @@ import rmit.saintgiong.shared.type.Role;
 @Slf4j
 public class InternalCompanyAuthService implements InternalCompanyAuthInterface {
 
+    private final ExternalCompanyAuthInterface externalCompanyAuthInterface;
+
     private final CompanyAuthMapper companyAuthMapper;
     private final CompanyAuthRepository companyAuthRepository;
-
     private final PasswordEncoder passwordEncoder;
+
     private final EmailService emailService;
     private final OtpService otpService;
     private final JweTokenService jweTokenService;
@@ -60,7 +56,6 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
     @Override
     @Transactional
     public CompanyRegistrationResponseDto registerCompany(CompanyRegistrationRequestDto requestDto) {
-        // Check if email already exists
         Optional<CompanyAuthEntity> existingAuth = companyAuthRepository.findByEmail(requestDto.getEmail());
         if (existingAuth.isPresent()) {
             throw new CompanyAccountAlreadyExisted("Email already registered");
@@ -70,42 +65,18 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         companyAuth.setHashedPassword(passwordEncoder.encode(requestDto.getPassword()));
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
-        ProfileRegistrationSentRecord profileSentRecord = ProfileRegistrationSentRecord.newBuilder()
-                .setCompanyId(savedAuth.getCompanyId())
-                .setCompanyName(requestDto.getCompanyName())
-                .setCountry(requestDto.getCountry())
-                .setPhoneNumber(Optional.ofNullable(requestDto.getPhoneNumber()).orElse(""))
-                .setCity(Optional.ofNullable(requestDto.getCity()).orElse(""))
-                .setAddress(Optional.ofNullable(requestDto.getAddress()).orElse(""))
-                .build();
 
-        ProducerRecord<String, Object> request = new ProducerRecord<>(
-                KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
-                profileSentRecord);
-        request.headers().add(
-                KafkaHeaders.REPLY_TOPIC,
-                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes());
+        ProfileRegistrationResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
 
-        try {
-            RequestReplyFuture<String, Object, Object> responseRecord = replyingKafkaTemplate.sendAndReceive(request);
-
-            ConsumerRecord<String, Object> response = responseRecord.get(10, TimeUnit.SECONDS);
-
-            Object responseValue = response.value();
-            if (responseValue instanceof ProfileRegistrationResponseRecord profileResponse) {
-                log.info(
-                        "Received profile registration response for companyId={}: {}",
-                        savedAuth.getCompanyId(),
-                        profileResponse);
-            } else {
-                log.warn(
-                        "Received unexpected or null profile registration response for companyId={} : {}",
-                        savedAuth.getCompanyId(),
-                        responseValue);
-            }
-        } catch (Exception e) {
-            log.error("Error while sending profile registration message for companyId={}", savedAuth.getCompanyId(), e);
+        if (response.getCompanyId() == null) {
+            log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
+            return CompanyRegistrationResponseDto.builder()
+                    .success(false)
+                    .email("Failed to create profile for ID: " + savedAuth.getCompanyId())
+                    .build();
         }
+
+        log.info("Successfully create profile for ID: {}", response.getCompanyId());
 
         String activationToken = jweTokenService.generateActivationToken(
                 savedAuth.getCompanyId(),
@@ -119,19 +90,24 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), activationPairDto.getOtp(), activationPairDto.getActivationToken());
 
         return CompanyRegistrationResponseDto.builder()
-                .companyId(savedAuth.getCompanyId())
+                .companyId(UUID.fromString(response.getCompanyId()))
                 .email(savedAuth.getEmail())
                 .success(true)
-                .message(
-                        "Company registered successfully. Please check your email for the OTP to activate your account.")
+                .message("Successfully create profile for ID: " + response.getCompanyId())
                 .build();
     }
 
     @Override
     @Transactional
-    public CompanyRegistrationResponseDto registerCompanyWithGoogleId(
+    public CompanyRegistrationResponseDto registerCompanyWithGoogleId (
             CompanyRegistrationGoogleRequestDto googleRequestDto,
-            String tempToken) {
+            String tempToken
+    ) {
+        Optional<CompanyAuthEntity> existingAuth = companyAuthRepository.findByEmail(googleRequestDto.getEmail());
+        if (existingAuth.isPresent()) {
+            throw new CompanyAccountAlreadyExisted("Email already registered");
+        }
+
         CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(googleRequestDto);
 
         String googleId = jweTokenService.getGoogleIdFromJweToken(tempToken);
@@ -145,54 +121,36 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         }
 
         companyAuth.setSsoToken(googleId);
-        // Auto-activate since Google OAuth has already verified the email
         companyAuth.setActivated(true);
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
-        ProfileRegistrationSentRecord profileSentRecord = ProfileRegistrationSentRecord.newBuilder()
-                .setCompanyId(savedAuth.getCompanyId())
-                .setCompanyName(googleRequestDto.getCompanyName())
-                .setCountry(googleRequestDto.getCountry())
-                .setPhoneNumber(Optional.ofNullable(googleRequestDto.getPhoneNumber()).orElse(""))
-                .setCity(Optional.ofNullable(googleRequestDto.getCity()).orElse(""))
-                .setAddress(Optional.ofNullable(googleRequestDto.getAddress()).orElse(""))
+        CompanyRegistrationRequestDto requestDto = CompanyRegistrationRequestDto.builder()
+                .companyName(googleRequestDto.getCompanyName())
+                .country(googleRequestDto.getCountry())
+                .phoneNumber(Optional.ofNullable(googleRequestDto.getPhoneNumber()).orElse(""))
+                .city(Optional.ofNullable(googleRequestDto.getCity()).orElse(""))
+                .address(Optional.ofNullable(googleRequestDto.getAddress()).orElse(""))
                 .build();
 
-        ProducerRecord<String, Object> request = new ProducerRecord<>(
-                KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
-                profileSentRecord);
-        request.headers().add(
-                KafkaHeaders.REPLY_TOPIC,
-                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC.getBytes());
+        ProfileRegistrationResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
 
-        try {
-            RequestReplyFuture<String, Object, Object> responseRecord = replyingKafkaTemplate.sendAndReceive(request);
-
-            ConsumerRecord<String, Object> response = responseRecord.get(10, TimeUnit.SECONDS);
-
-            Object responseValue = response.value();
-            if (responseValue instanceof ProfileRegistrationResponseRecord profileResponse) {
-                log.info(
-                        "Received profile registration response for Google OAuth companyId={}: {}",
-                        savedAuth.getCompanyId(),
-                        profileResponse);
-            } else {
-                log.warn(
-                        "Received unexpected or null profile registration response for Google OAuth companyId={} : {}",
-                        savedAuth.getCompanyId(),
-                        responseValue);
-            }
-        } catch (Exception e) {
-            log.error("Error while sending profile registration message for Google OAuth companyId={}",
-                    savedAuth.getCompanyId(), e);
+        if (response.getCompanyId() == null) {
+            log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
+            return CompanyRegistrationResponseDto.builder()
+                    .success(false)
+                    .email("Failed to create profile for ID: " + savedAuth.getCompanyId())
+                    .build();
         }
+
+        log.info("Successfully create profile for ID: {}", response.getCompanyId());
 
         // Generate tokens for immediate authentication (no OTP required for SSO)
         TokenPairDto tokenPair = jweTokenService.generateTokenPairDto(
                 savedAuth.getCompanyId(),
                 savedAuth.getEmail(),
                 Role.COMPANY,
-                true);
+                true
+        );
 
         log.info("Company registered via Google SSO and auto-activated: {}", savedAuth.getEmail());
 
