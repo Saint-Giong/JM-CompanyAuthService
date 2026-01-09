@@ -106,8 +106,14 @@ public class GoogleOAuthController {
             @CookieValue(name = CookieType.TEMP_TOKEN, required = false) String tempToken,
             HttpServletResponse response) {
         return () -> {
+            // Fallback: use tempToken from body if cookie is missing
+            String finalTempToken = tempToken;
+            if (finalTempToken == null || finalTempToken.isEmpty()) {
+                finalTempToken = requestDto.getTempToken();
+            }
+
             // Validate temp token is present
-            if (tempToken == null || tempToken.isEmpty()) {
+            if (finalTempToken == null || finalTempToken.isEmpty()) {
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body(new GenericResponseDto<>(false,
@@ -115,7 +121,7 @@ public class GoogleOAuthController {
             }
 
             CompanyRegistrationResponseDto registerResponseDto = internalCompanyAuthInterface
-                    .registerCompanyWithGoogleId(requestDto, tempToken);
+                    .registerCompanyWithGoogleId(requestDto, finalTempToken);
             internalCompanyAuthInterface.clearBrowserCookie(response, CookieType.TEMP_TOKEN);
 
             // Set auth cookies if tokens are present (SSO registration skips OTP)

@@ -13,4 +13,5 @@ public class GoogleAuthResponseDto {
     private String companyId;
     private String email;
     private String name;
+    private String tempToken; // Fallback for cookie issues
 }
