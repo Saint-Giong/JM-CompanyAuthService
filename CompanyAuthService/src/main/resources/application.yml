@@ -77,8 +77,8 @@ otp:
   max-per-hour: 5                # max OTPs per hour per company
 
 google:
-  oauth2-login-redirect-uri: ${OAUTH2_LOGIN_REDIRECT_URI:http://localhost:8180/dashboard}
-  oauth2-link-redirect-uri: ${OAUTH2_LINK_REDIRECT_URI:http://localhost:8180/profile}
+  oauth2-login-redirect-uri: ${FRONTEND_BASE_URL:http://localhost:3000}/login
+  oauth2-link-redirect-uri: ${FRONTEND_BASE_URL:http://localhost:3000}/profile
 
 # OpenAPI/Swagger Configuration
 springdoc:
