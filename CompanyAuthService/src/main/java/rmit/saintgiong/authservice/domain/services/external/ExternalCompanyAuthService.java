@@ -6,9 +6,9 @@ import org.springframework.stereotype.Service;
 import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthInterface;
 import rmit.saintgiong.authapi.external.services.kafka.EventProducerInterface;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
-import rmit.saintgiong.authapi.external.common.dto.avro.ProfileRegistrationResponseRecord;
-import rmit.saintgiong.authapi.external.common.dto.avro.ProfileRegistrationSentRecord;
 import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
+import rmit.saintgiong.shared.dto.avro.profile.CreateProfileResponseRecord;
+import rmit.saintgiong.shared.dto.avro.profile.CreateProfileRequestRecord;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -22,9 +22,9 @@ public class ExternalCompanyAuthService implements ExternalCompanyAuthInterface 
     private final EventProducerInterface eventProducer;
 
     @Override
-    public ProfileRegistrationResponseRecord sendRegisterRequestForCompanyProfile(UUID companyId, CompanyRegistrationRequestDto requestDto) {
+    public CreateProfileResponseRecord sendRegisterRequestForCompanyProfile(UUID companyId, CompanyRegistrationRequestDto requestDto) {
         try {
-            ProfileRegistrationSentRecord profileSentRecord = ProfileRegistrationSentRecord.newBuilder()
+            CreateProfileRequestRecord profileSentRecord = CreateProfileRequestRecord.newBuilder()
                     .setCompanyId(companyId)
                     .setCompanyName(requestDto.getCompanyName())
                     .setCountry(requestDto.getCountry())
@@ -33,17 +33,17 @@ public class ExternalCompanyAuthService implements ExternalCompanyAuthInterface 
                     .setAddress(Optional.ofNullable(requestDto.getAddress()).orElse(""))
                     .build();
 
-            ProfileRegistrationResponseRecord response = eventProducer.sendAndReceive(
+            CreateProfileResponseRecord response = eventProducer.sendAndReceive(
                     KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
                     KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC,
                     profileSentRecord,
-                    ProfileRegistrationResponseRecord.class
+                    CreateProfileResponseRecord.class
             );
 
             return response;
 
         } catch (ExecutionException | InterruptedException e) {
-            return ProfileRegistrationResponseRecord.newBuilder()
+            return CreateProfileResponseRecord.newBuilder()
                     .setCompanyId(null)
                     .build();
         }

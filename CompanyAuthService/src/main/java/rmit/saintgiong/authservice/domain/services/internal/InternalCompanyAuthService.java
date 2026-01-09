@@ -17,7 +17,6 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogl
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
-import rmit.saintgiong.authapi.external.common.dto.avro.ProfileRegistrationResponseRecord;
 import rmit.saintgiong.authapi.internal.common.dto.otp.ActivationPairDto;
 import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
@@ -31,6 +30,7 @@ import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
 import rmit.saintgiong.authservice.domain.model.CompanyAuth;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
+import rmit.saintgiong.shared.dto.avro.profile.CreateProfileResponseRecord;
 import rmit.saintgiong.shared.token.TokenClaimsDto;
 import rmit.saintgiong.shared.token.TokenPairDto;
 import rmit.saintgiong.shared.type.CookieType;
@@ -66,7 +66,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
 
-        ProfileRegistrationResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
+        CreateProfileResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
 
         if (response.getCompanyId() == null) {
             log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
@@ -90,7 +90,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         emailService.sendOtpEmail(requestDto.getEmail(), requestDto.getCompanyName(), activationPairDto.getOtp(), activationPairDto.getActivationToken());
 
         return CompanyRegistrationResponseDto.builder()
-                .companyId(UUID.fromString(response.getCompanyId()))
+                .companyId(response.getCompanyId())
                 .email(savedAuth.getEmail())
                 .success(true)
                 .message("Successfully create profile for ID: " + response.getCompanyId())
@@ -132,7 +132,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                 .address(Optional.ofNullable(googleRequestDto.getAddress()).orElse(""))
                 .build();
 
-        ProfileRegistrationResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
+        CreateProfileResponseRecord response = externalCompanyAuthInterface.sendRegisterRequestForCompanyProfile(savedAuth.getCompanyId(), requestDto);
 
         if (response.getCompanyId() == null) {
             log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
