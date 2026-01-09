@@ -136,6 +136,8 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         }
 
         companyAuth.setSsoToken(googleId);
+        // Auto-activate since Google OAuth has already verified the email
+        companyAuth.setActivated(true);
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
         ProfileRegistrationSentRecord profileSentRecord = ProfileRegistrationSentRecord.newBuilder()
@@ -176,15 +178,21 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                     savedAuth.getCompanyId(), e);
         }
 
-        String otp = otpService.generateOtp(savedAuth.getCompanyId());
-        emailService.sendOtpEmail(googleRequestDto.getEmail(), googleRequestDto.getCompanyName(), otp);
+        // Generate tokens for immediate authentication (no OTP required for SSO)
+        TokenPairDto tokenPair = jweTokenService.generateTokenPairDto(
+                savedAuth.getCompanyId(),
+                savedAuth.getEmail(),
+                Role.COMPANY,
+                true);
+
+        log.info("Company registered via Google SSO and auto-activated: {}", savedAuth.getEmail());
 
         return CompanyRegistrationResponseDto.builder()
                 .companyId(savedAuth.getCompanyId())
                 .email(savedAuth.getEmail())
                 .success(true)
-                .message(
-                        "Company registered successfully. Please check your email for the OTP to activate your account.")
+                .message("Company registered successfully via Google SSO.")
+                .tokenPair(tokenPair)
                 .build();
     }
 
