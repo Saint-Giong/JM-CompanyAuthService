@@ -103,9 +103,17 @@ public class GoogleOAuthController {
     @PostMapping("/google/register")
     public Callable<ResponseEntity<GenericResponseDto<?>>> registerCompanyWithGoogleAuthentication(
             @Valid @RequestBody CompanyRegistrationGoogleRequestDto requestDto,
-            @CookieValue(name = CookieType.TEMP_TOKEN) String tempToken,
+            @CookieValue(name = CookieType.TEMP_TOKEN, required = false) String tempToken,
             HttpServletResponse response) {
         return () -> {
+            // Validate temp token is present
+            if (tempToken == null || tempToken.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body(new GenericResponseDto<>(false,
+                                "Session expired. Please sign in with Google again to continue registration.", null));
+            }
+
             CompanyRegistrationResponseDto registerResponseDto = internalCompanyAuthInterface
                     .registerCompanyWithGoogleId(requestDto, tempToken);
             internalCompanyAuthInterface.clearBrowserCookie(response, CookieType.TEMP_TOKEN);
