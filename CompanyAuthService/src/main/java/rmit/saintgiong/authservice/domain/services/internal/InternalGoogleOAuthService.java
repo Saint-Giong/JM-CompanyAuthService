@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.services;
+package rmit.saintgiong.authservice.domain.services.internal;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -23,19 +23,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleAuthResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.services.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authservice.common.config.JweConfig;
-import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
-import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
+import rmit.saintgiong.shared.type.CookieType;
+import rmit.saintgiong.shared.type.Role;
+import rmit.saintgiong.shared.token.TokenPairDto;
+import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
+import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;
 import rmit.saintgiong.authservice.common.utils.JweTokenService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
-import rmit.saintgiong.shared.token.TokenPairDto;
-import rmit.saintgiong.shared.type.CookieType;
-import rmit.saintgiong.shared.type.Role;
 
 @Slf4j
 @Service

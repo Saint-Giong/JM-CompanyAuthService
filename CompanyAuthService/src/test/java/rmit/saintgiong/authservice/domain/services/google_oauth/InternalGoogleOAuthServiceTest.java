@@ -17,7 +17,7 @@
 //import rmit.saintgiong.authservice.common.utils.JweTokenService;
 //import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 //import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
-//import rmit.saintgiong.authservice.domain.services.InternalGoogleOAuthService;
+//import rmit.saintgiong.authservice.domain.services.internal.InternalGoogleOAuthService;
 //
 //import java.util.*;
 //

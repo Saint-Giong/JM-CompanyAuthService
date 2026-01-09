@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.service;
+package rmit.saintgiong.authapi.internal.services;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import jakarta.servlet.http.HttpServletResponse;
