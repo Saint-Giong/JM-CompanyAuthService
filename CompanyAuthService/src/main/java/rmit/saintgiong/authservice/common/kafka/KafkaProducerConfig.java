@@ -9,35 +9,29 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
 public class KafkaProducerConfig {
 
-    @Value("${kafka.kafka-host-url}")
-    private String kafkaHostUrl;
-
-    @Value("${kafka.schema-registry-host-url}")
-    private String schemaRegistryHostUrl;
-
     @Bean
-    public ProducerFactory<String, Object> authProducerFactory() {
-        Map<String, Object> props = new HashMap<>();
-
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaHostUrl);
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-
-        // QUAN TRỌNG: Chỉ đường dẫn tới Schema Registry
-        props.put("schema.registry.url", schemaRegistryHostUrl);
-
-        return new DefaultKafkaProducerFactory<>(props);
+    public KafkaTemplate<String, Object> kafkaTemplate(ProducerFactory<String, Object> producerFactory) {
+        return new KafkaTemplate<>(producerFactory);
     }
 
     @Bean
-    public KafkaTemplate<String, Object> kafkaTemplate() {
-        return new KafkaTemplate<>(authProducerFactory());
+    public ReplyingKafkaTemplate<String, Object, Object> replyingKafkaTemplate(
+            ProducerFactory<String, Object> pf,
+            ConcurrentMessageListenerContainer<String, Object> replyContainer
+    ) {
+        ReplyingKafkaTemplate<String, Object, Object> replyingKafkaTemplate = new ReplyingKafkaTemplate<>(pf, replyContainer);
+        replyingKafkaTemplate.setDefaultReplyTimeout(Duration.ofSeconds(10));
+
+        return replyingKafkaTemplate;
     }
 }

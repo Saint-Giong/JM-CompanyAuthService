@@ -1,4 +1,4 @@
-package rmit.saintgiong.authapi.internal.service;
+package rmit.saintgiong.authapi.internal.services;
 
 import java.util.UUID;
 

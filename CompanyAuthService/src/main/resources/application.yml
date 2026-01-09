@@ -31,6 +31,20 @@ spring:
           google:
             client-id: ${OAUTH2_CLIENT_ID}
             client-secret: ${OAUTH2_CLIENT_SECRET}
+  kafka:
+    bootstrap-servers:
+      - ${KAFKA_HOST_URL:localhost:9192}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+    properties:
+      schema.registry.url: ${SCHEMA_REGISTRY_HOST_URL:http://localhost:9191}
+      specific.avro.reader: true
 
 management:
   endpoints:
@@ -55,10 +69,6 @@ eureka:
     register-with-eureka: true
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8070/eureka}
-
-kafka:
-  kafka-host-url: ${KAFKA_HOST_URL:localhost:9192}
-  schema-registry-host-url: ${SCHEMA_REGISTRY_HOST_URL:http://localhost:9191}
 
 key:
   public-key-b64: ${PUBLIC_KEY_B64:}

@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.services;
+package rmit.saintgiong.authservice.domain.services.internal;
 
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
@@ -10,20 +10,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.UriComponentsBuilder;
-import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLinkGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleAuthResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.oauth.GoogleOAuthResponseDto;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
-import rmit.saintgiong.authapi.internal.service.InternalGoogleOAuthInterface;
+import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.services.InternalGoogleOAuthInterface;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
-import rmit.saintgiong.shared.response.GenericResponseDto;
 import rmit.saintgiong.shared.type.CookieType;
 import rmit.saintgiong.shared.type.Role;
 import rmit.saintgiong.shared.token.TokenPairDto;

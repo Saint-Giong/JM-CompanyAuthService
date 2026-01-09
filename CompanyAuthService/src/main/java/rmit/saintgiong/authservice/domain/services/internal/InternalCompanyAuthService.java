@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.services;
+package rmit.saintgiong.authservice.domain.services.internal;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -24,7 +24,7 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.LoginServiceDto;
 import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationResponseRecord;
 import rmit.saintgiong.authapi.internal.common.dto.avro.ProfileRegistrationSentRecord;
 import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.exception.resources.CompanyAccountAlreadyExisted;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.exception.token.InvalidCredentialsException;

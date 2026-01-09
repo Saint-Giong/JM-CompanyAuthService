@@ -20,7 +20,7 @@ import rmit.saintgiong.authapi.internal.common.dto.auth.*;
 import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.otp.OtpVerificationResponseDto;
 import rmit.saintgiong.authapi.internal.common.dto.refresh.RefreshTokenResponseDto;
-import rmit.saintgiong.authapi.internal.service.InternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.internal.services.InternalCompanyAuthInterface;
 import rmit.saintgiong.authservice.common.config.JweConfig;
 import rmit.saintgiong.authservice.common.exception.token.InvalidTokenException;
 import rmit.saintgiong.authservice.domain.mapper.CompanyAuthMapper;
