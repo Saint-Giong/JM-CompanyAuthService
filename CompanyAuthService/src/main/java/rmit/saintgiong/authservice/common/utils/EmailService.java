@@ -28,6 +28,9 @@ public class EmailService {
     @Value("${AWS_SES_SENDER}")
     private String senderEmail;
 
+    @Value("${FRONTEND_BASE_URL}")
+    private String frontendBaseUrl;
+
     private SesV2Client sesClient;
 
     @PostConstruct
@@ -46,16 +49,18 @@ public class EmailService {
      * @param userName       The user's display name
      * @param otp            The 6-digit OTP code
      */
-    public void sendOtpEmail(String recipientEmail, String userName, String otp) {
+    public void sendOtpEmail(String recipientEmail, String userName, String otp, String activationToken) {
         // Prepare Data with OTP
-        String templateData = String.format("{\"name\":\"%s\", \"otp\":\"%s\"}", userName, otp);
+        String activationLink = String.format("%s/activate-account?activationToken=%s", frontendBaseUrl, activationToken);
+
+        String templateData = String.format("{\"name\":\"%s\", \"otp\":\"%s\" , \"activation_link\":\"%s\"}", userName, otp, activationLink);
 
         // Build Request
         SendEmailRequest request = SendEmailRequest.builder()
                 .fromEmailAddress(senderEmail)
                 .destination(d -> d.toAddresses(recipientEmail))
                 .content(c -> c.template(t -> t
-                        .templateName("OTPVerificationTemplate") // Must match AWS Console Name
+                        .templateName("AccountVerificationTemplate") // Must match AWS Console Name
                         .templateData(templateData)
                 ))
                 .build();

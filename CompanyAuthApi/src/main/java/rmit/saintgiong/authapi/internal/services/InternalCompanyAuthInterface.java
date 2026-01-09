@@ -24,6 +24,8 @@ public interface InternalCompanyAuthInterface {
 
     void verifyOtpAndActivateAccount(UUID companyId, String otp);
 
+    void verifyActivationTokenAndActivateAccount(String activationToken);
+
     void resendOtp(UUID companyId);
 
     void setInitialPassword(String companyId, String password);
