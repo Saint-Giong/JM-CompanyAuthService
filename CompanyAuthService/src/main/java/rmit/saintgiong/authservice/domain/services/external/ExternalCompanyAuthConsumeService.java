@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthConsumeInterface;
 import rmit.saintgiong.authapi.internal.common.dto.subscription.MailSubscriptionRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.subscription.MailSubscriptionRequestDtoList;
+import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
 import rmit.saintgiong.authservice.common.exception.resources.ResourceNotFoundException;
 import rmit.saintgiong.authservice.common.utils.EmailService;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
@@ -26,7 +27,7 @@ public class ExternalCompanyAuthConsumeService implements ExternalCompanyAuthCon
 
     private final EmailService emailService;
 
-    @KafkaListener(topics = "JM_MAIL_SUBSCRIPTION_SENT")
+    @KafkaListener(topics = KafkaTopic.MAIL_SUBSCRIPTION_SENT_REQUEST)
     public void handleSentSubscriptionMailRequest(MailSubscriptionRequestRecordList requestRecordList) {
         List<MailSubscriptionRequestDto> requestDtos = requestRecordList.getSubscriptionList().stream()
                 .map(requestRecord ->

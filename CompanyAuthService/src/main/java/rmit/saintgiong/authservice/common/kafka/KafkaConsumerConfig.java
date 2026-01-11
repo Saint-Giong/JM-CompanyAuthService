@@ -33,7 +33,6 @@ public class KafkaConsumerConfig {
         ContainerProperties containerProperties = new ContainerProperties(
                 KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC,
                 KafkaTopic.CREATE_SUBSCRIPTION_RESPONSE_TOPIC
-//                "JM_MAIL_SUBSCRIPTION_SENT"
         );
 
         return new ConcurrentMessageListenerContainer<>(consumerFactory, containerProperties);

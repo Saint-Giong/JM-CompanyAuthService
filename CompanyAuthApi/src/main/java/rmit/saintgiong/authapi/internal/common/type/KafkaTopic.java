@@ -9,4 +9,6 @@ public final class KafkaTopic {
 
     public static final String CREATE_SUBSCRIPTION_REQUEST_TOPIC = "JM_CREATE_SUBSCRIPTION_REQUEST";
     public static final String CREATE_SUBSCRIPTION_RESPONSE_TOPIC = "JM_CREATE_SUBSCRIPTION_RESPONSE";
+
+    public static final String MAIL_SUBSCRIPTION_SENT_REQUEST = "JM_MAIL_SUBSCRIPTION_SENT_REQUEST";
 }
