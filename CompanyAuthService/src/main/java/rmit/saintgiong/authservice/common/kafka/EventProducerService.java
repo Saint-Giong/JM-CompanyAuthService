@@ -1,4 +1,4 @@
-package rmit.saintgiong.authservice.domain.services.kafka;
+package rmit.saintgiong.authservice.common.kafka;
 
 import java.util.concurrent.ExecutionException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

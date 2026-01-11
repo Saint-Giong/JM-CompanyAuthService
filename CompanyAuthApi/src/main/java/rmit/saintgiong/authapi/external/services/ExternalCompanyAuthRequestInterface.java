@@ -7,7 +7,7 @@ import rmit.saintgiong.shared.dto.avro.subscription.CreateSubscriptionResponseRe
 
 import java.util.UUID;
 
-public interface ExternalCompanyAuthInterface {
+public interface ExternalCompanyAuthRequestInterface {
 
     CreateProfileResponseRecord sendCreateProfileRequest(UUID companyId, CompanyRegistrationRequestDto requestDto);
 

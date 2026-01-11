@@ -22,10 +22,10 @@ import java.util.UUID;
 @Builder
 public class CompanyAuthEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+//    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID companyId;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = false)
     @Email
     private String email;
 

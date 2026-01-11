@@ -3,7 +3,7 @@ package rmit.saintgiong.authservice.domain.services.external;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthRequestInterface;
 import rmit.saintgiong.authapi.external.services.kafka.EventProducerInterface;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.subscription.CreateSubscriptionRequestDto;
@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ExternalCompanyAuthService implements ExternalCompanyAuthInterface {
+public class ExternalCompanyAuthRequestService implements ExternalCompanyAuthRequestInterface {
 
     private final EventProducerInterface eventProducer;
 

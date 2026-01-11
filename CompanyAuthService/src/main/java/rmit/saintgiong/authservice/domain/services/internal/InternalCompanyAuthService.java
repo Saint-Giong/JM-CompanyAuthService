@@ -3,7 +3,6 @@ package rmit.saintgiong.authservice.domain.services.internal;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthInterface;
+import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthRequestInterface;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyLoginRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationGoogleRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
@@ -43,7 +42,7 @@ import rmit.saintgiong.shared.type.Role;
 @Slf4j
 public class InternalCompanyAuthService implements InternalCompanyAuthInterface {
 
-    private final ExternalCompanyAuthInterface externalCompanyAuthInterface;
+    private final ExternalCompanyAuthRequestInterface externalCompanyAuthRequestInterface;
 
     private final CompanyAuthMapper companyAuthMapper;
     private final CompanyAuthRepository companyAuthRepository;
@@ -62,11 +61,12 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
         }
 
         CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationDto(requestDto);
+        companyAuth.setCompanyId(UUID.randomUUID());
         companyAuth.setHashedPassword(passwordEncoder.encode(requestDto.getPassword()));
 
         CompanyAuthEntity savedAuth = companyAuthRepository.save(companyAuthMapper.toEntity(companyAuth));
 
-        CreateProfileResponseRecord profileResponse = externalCompanyAuthInterface.sendCreateProfileRequest(savedAuth.getCompanyId(), requestDto);
+        CreateProfileResponseRecord profileResponse = externalCompanyAuthRequestInterface.sendCreateProfileRequest(savedAuth.getCompanyId(), requestDto);
         if (profileResponse.getCompanyId() == null) {
             log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
             return CompanyRegistrationResponseDto.builder()
@@ -81,7 +81,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                 .companyId(savedAuth.getCompanyId())
                 .build();
 
-        CreateSubscriptionResponseRecord subReponse = externalCompanyAuthInterface.sendCreateSubscriptionRequest(subscriptionRequestDto);
+        CreateSubscriptionResponseRecord subReponse = externalCompanyAuthRequestInterface.sendCreateSubscriptionRequest(subscriptionRequestDto);
         if (subReponse.getCompanyId() == null) {
             log.warn("Failed create subscription for ID: {}", savedAuth.getCompanyId());
             return CompanyRegistrationResponseDto.builder()
@@ -119,8 +119,6 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
             throw new CompanyAccountAlreadyExisted("Email already registered");
         }
 
-        CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(googleRequestDto);
-
         String googleId = jweTokenService.getGoogleIdFromJweToken(tempToken);
         String emailFromToken = jweTokenService.getEmailFromJweString(tempToken);
         if (googleId == null || emailFromToken == null) {
@@ -131,6 +129,8 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
             throw new InvalidTokenException("Email in TEMP_COOKIE does not match the registration email.");
         }
 
+        CompanyAuth companyAuth = companyAuthMapper.fromCompanyRegistrationGoogleDto(googleRequestDto);
+        companyAuth.setCompanyId(UUID.randomUUID());
         companyAuth.setSsoToken(googleId);
         companyAuth.setActivated(true);
 
@@ -143,7 +143,7 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                 .address(Optional.ofNullable(googleRequestDto.getAddress()).orElse(""))
                 .build();
 
-        CreateProfileResponseRecord response = externalCompanyAuthInterface.sendCreateProfileRequest(savedAuth.getCompanyId(), requestDto);
+        CreateProfileResponseRecord response = externalCompanyAuthRequestInterface.sendCreateProfileRequest(savedAuth.getCompanyId(), requestDto);
 
         if (response.getCompanyId() == null) {
             log.warn("Failed create profile for ID: {}", savedAuth.getCompanyId());
