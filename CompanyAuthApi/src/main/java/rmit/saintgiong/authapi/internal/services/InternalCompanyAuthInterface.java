@@ -41,7 +41,6 @@ public interface InternalCompanyAuthInterface {
             int refreshMaxAge
     );
 
-
     void setCookieToBrowser(
             HttpServletResponse response,
             String cookieType,
@@ -50,6 +49,4 @@ public interface InternalCompanyAuthInterface {
     );
 
      void clearBrowserCookie(HttpServletResponse response, String cookieType);
-
-
 }
