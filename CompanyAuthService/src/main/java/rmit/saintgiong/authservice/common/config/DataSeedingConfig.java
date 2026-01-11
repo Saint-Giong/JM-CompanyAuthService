@@ -28,23 +28,23 @@ public class DataSeedingConfig implements CommandLineRunner {
             return;
         }
 
-        List<CompanyAuthEntity> seeds = new ArrayList<>();
-        String uuidBased = "00000000-0000-0000-0000-00000000000";
-
-        for (int i = 0; i < 5; i++) {
-            seeds.add(
-                    CompanyAuthEntity.builder()
-                            .companyId(UUID.fromString(uuidBased + i))
-                            .email("nguyensontungtdn1901@gmail.com")
-                            .hashedPassword(encoder.encode("123"))
-                            .ssoToken(null)
-                            .isActivated(true)
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
-                            .build()
-            );
-        }
-
-        companyAuthRepository.saveAll(seeds);
+//        List<CompanyAuthEntity> seeds = new ArrayList<>();
+//        String uuidBased = "00000000-0000-0000-0000-00000000000";
+//
+//        for (int i = 0; i < 5; i++) {
+//            seeds.add(
+//                    CompanyAuthEntity.builder()
+//                            .companyId(UUID.fromString(uuidBased + i))
+//                            .email("nguyensontungtdn1901@gmail.com")
+//                            .hashedPassword(encoder.encode("123"))
+//                            .ssoToken(null)
+//                            .isActivated(true)
+//                            .createdAt(LocalDateTime.now())
+//                            .updatedAt(LocalDateTime.now())
+//                            .build()
+//            );
+//        }
+//
+//        companyAuthRepository.saveAll(seeds);
     }
 }
