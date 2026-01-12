@@ -8,7 +8,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.ContainerProperties;
-import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
+import rmit.saintgiong.shared.type.KafkaTopic;
 
 @Configuration
 @EnableKafka
@@ -31,8 +31,8 @@ public class KafkaConsumerConfig {
     ) {
         // Topic for request and reply communication
         ContainerProperties containerProperties = new ContainerProperties(
-                KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC,
-                KafkaTopic.CREATE_SUBSCRIPTION_RESPONSE_TOPIC
+                KafkaTopic.JM_CREATE_PROFILE_RESPONSE_TOPIC,
+                KafkaTopic.JM_CREATE_SUBSCRIPTION_RESPONSE_TOPIC
         );
 
         return new ConcurrentMessageListenerContainer<>(consumerFactory, containerProperties);

@@ -7,11 +7,11 @@ import rmit.saintgiong.authapi.external.services.ExternalCompanyAuthRequestInter
 import rmit.saintgiong.authapi.external.services.kafka.EventProducerInterface;
 import rmit.saintgiong.authapi.internal.common.dto.auth.CompanyRegistrationRequestDto;
 import rmit.saintgiong.authapi.internal.common.dto.subscription.CreateSubscriptionRequestDto;
-import rmit.saintgiong.authapi.internal.common.type.KafkaTopic;
 import rmit.saintgiong.shared.dto.avro.profile.CreateProfileResponseRecord;
 import rmit.saintgiong.shared.dto.avro.profile.CreateProfileRequestRecord;
 import rmit.saintgiong.shared.dto.avro.subscription.CreateSubscriptionRequestRecord;
 import rmit.saintgiong.shared.dto.avro.subscription.CreateSubscriptionResponseRecord;
+import rmit.saintgiong.shared.type.KafkaTopic;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -37,8 +37,8 @@ public class ExternalCompanyAuthRequestService implements ExternalCompanyAuthReq
                     .build();
 
             CreateProfileResponseRecord response = eventProducer.sendAndReceive(
-                    KafkaTopic.COMPANY_REGISTRATION_REQUEST_TOPIC,
-                    KafkaTopic.COMPANY_REGISTRATION_REPLY_TOPIC,
+                    KafkaTopic.JM_CREATE_PROFILE_REQUEST_TOPIC,
+                    KafkaTopic.JM_CREATE_PROFILE_RESPONSE_TOPIC,
                     profileSentRecord,
                     CreateProfileResponseRecord.class
             );
@@ -60,8 +60,8 @@ public class ExternalCompanyAuthRequestService implements ExternalCompanyAuthReq
                     .build();
 
             CreateSubscriptionResponseRecord response = eventProducer.sendAndReceive(
-                    KafkaTopic.CREATE_SUBSCRIPTION_REQUEST_TOPIC,
-                    KafkaTopic.CREATE_SUBSCRIPTION_RESPONSE_TOPIC,
+                    KafkaTopic.JM_CREATE_SUBSCRIPTION_REQUEST_TOPIC,
+                    KafkaTopic.JM_CREATE_SUBSCRIPTION_RESPONSE_TOPIC,
                     requestRecord,
                     CreateSubscriptionResponseRecord.class
             );
