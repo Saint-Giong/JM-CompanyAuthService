@@ -27,7 +27,7 @@ public class ExternalCompanyAuthConsumeService implements ExternalCompanyAuthCon
 
     private final EmailService emailService;
 
-    @KafkaListener(topics = KafkaTopic.MAIL_SUBSCRIPTION_SENT_REQUEST)
+    @KafkaListener(topics = KafkaTopic.MAIL_SUBSCRIPTION_SENT_REQUEST_TOPIC)
     public void handleSentSubscriptionMailRequest(MailSubscriptionRequestRecordList requestRecordList) {
         List<MailSubscriptionRequestDto> requestDtos = requestRecordList.getSubscriptionList().stream()
                 .map(requestRecord ->
