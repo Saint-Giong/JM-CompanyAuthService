@@ -81,15 +81,15 @@ public class InternalCompanyAuthService implements InternalCompanyAuthInterface 
                 .companyId(savedAuth.getCompanyId())
                 .build();
 
-        CreateSubscriptionResponseRecord subReponse = externalCompanyAuthRequestInterface.sendCreateSubscriptionRequest(subscriptionRequestDto);
-        if (subReponse.getCompanyId() == null) {
+        CreateSubscriptionResponseRecord subResponse = externalCompanyAuthRequestInterface.sendCreateSubscriptionRequest(subscriptionRequestDto);
+        if (subResponse.getCompanyId() == null) {
             log.warn("Failed create subscription for ID: {}", savedAuth.getCompanyId());
             return CompanyRegistrationResponseDto.builder()
                     .success(false)
                     .email("Failed to create subscription for ID: " + savedAuth.getCompanyId())
                     .build();
         }
-        log.info("Successfully create subscription for ID: {}", subReponse.getCompanyId());
+        log.info("Successfully create subscription for ID: {}", subResponse.getCompanyId());
 
         String activationToken = jweTokenService.generateActivationToken(
                 savedAuth.getCompanyId(),
