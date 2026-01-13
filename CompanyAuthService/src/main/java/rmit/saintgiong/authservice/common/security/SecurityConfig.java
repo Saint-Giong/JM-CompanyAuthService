@@ -44,8 +44,9 @@ public class SecurityConfig {
                                                                 "/google/auth",
                                                                 "/register",
                                                                 "/login",
-                                                                "activate-account",
-                                                                "logout")
+                                                                "/activate-account",
+                                                                "/logout"
+                                                )
                                                 .permitAll()
 
                                                 .requestMatchers(
