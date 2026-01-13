@@ -482,8 +482,4 @@ public class CompanyAuthController {
         };
     }
 
-    @GetMapping("/dashboard")
-    public String dashboard() {
-        return "this is a dashboard";
-    }
 }

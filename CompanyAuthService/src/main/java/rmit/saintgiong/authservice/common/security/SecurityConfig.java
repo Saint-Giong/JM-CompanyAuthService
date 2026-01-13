@@ -40,25 +40,26 @@ public class SecurityConfig {
                                                 // PUBLIC ENDPOINT FOR SERVICES
                                                 .requestMatchers(
                                                                 "/google/redirect-url",
+                                                                "/google/register",
                                                                 "/google/auth",
                                                                 "/register",
                                                                 "/login",
-                                                                "/dashboard")
+                                                                "activate-account",
+                                                                "logout")
                                                 .permitAll()
 
                                                 .requestMatchers(
-                                                                "/refresh-token",
-                                                                "/logout")
-                                                .hasAnyRole(Role.COMPANY.name(), Role.COMPANY_REFRESH.name())
+                                                                "/verify-account ",
+                                                                "/set-password",
+                                                                "/resend-otp",
+                                                                "/change-password",
+                                                                "/google/link-google",
+                                                                "/google/relink-google")
+                                                .hasRole(Role.COMPANY.name())
 
                                                 .requestMatchers(
-                                                                "/google/link-google",
-                                                                "/google/relink-google",
-                                                                "/set-password",
-                                                                "/change-password",
-                                                                "/verify-account",
-                                                                "/resend-otp")
-                                                .hasRole(Role.COMPANY.name())
+                                                                "/refresh-token")
+                                                .hasRole(Role.COMPANY_REFRESH.name())
 
                                                 .anyRequest().authenticated())
                                 .logout(AbstractHttpConfigurer::disable)
