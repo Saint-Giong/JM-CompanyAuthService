@@ -14,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import rmit.saintgiong.authservice.domain.entity.CompanyAuthEntity;
 import rmit.saintgiong.authservice.domain.repository.CompanyAuthRepository;
 
-
-
 @Component
 @Slf4j
 @RequiredArgsConstructor
