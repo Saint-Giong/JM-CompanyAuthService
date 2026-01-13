@@ -50,7 +50,7 @@ public class SecurityConfig {
                                                 .permitAll()
 
                                                 .requestMatchers(
-                                                                "/verify-account ",
+                                                                "/verify-account",
                                                                 "/set-password",
                                                                 "/resend-otp",
                                                                 "/change-password",
