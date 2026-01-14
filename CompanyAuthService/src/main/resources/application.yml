@@ -18,6 +18,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: GMT+7
   data:
     redis:
       host: ${REDIS_HOST:localhost}
